@@ -1,2 +1,7 @@
-# smart-medicine-reminder
-An AI based project which will help to old aged person to solving their problem forgating take medicine.
+## 
+
+This source code has been exported from [Caffeine](https://caffeine.ai/)
+
+### Coming Soon
+
+We are working on tools to help you build locally and deploy your apps back to caffeine.
