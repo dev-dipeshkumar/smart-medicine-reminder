@@ -14,7 +14,6 @@ export function useReminderNotifications(
     if (Notification.permission === "default") {
       Notification.requestPermission().then((perm) => {
         setNotifPermission(perm);
-        console.log(`[MediRemind] Notification permission: ${perm}`);
       });
     } else {
       setNotifPermission(Notification.permission);
@@ -34,60 +33,61 @@ export function useReminderNotifications(
 
       for (const reminder of reminders) {
         if (!reminder.isActive) continue;
-        if (!reminder.times || !reminder.times.includes(currentHHMM)) continue;
+        // MedicineReminder has an array of times; check each one
+        for (const scheduledTime of reminder.times.length
+          ? reminder.times
+          : ["08:00"]) {
+          if (scheduledTime !== currentHHMM) continue;
 
-        const fireKey = `fired_${reminder.id}_${currentHHMM}_${today}`;
+          const fireKey = `fired_${reminder.id}_${scheduledTime}_${today}`;
 
-        let alreadyFired = false;
-        try {
-          alreadyFired = sessionStorage.getItem(fireKey) === "1";
-        } catch {
-          // sessionStorage unavailable
-        }
-
-        if (alreadyFired) continue;
-
-        // Mark as fired
-        try {
-          sessionStorage.setItem(fireKey, "1");
-        } catch {
-          // ignore
-        }
-
-        console.log(
-          `[MediRemind] Reminder fired: ${reminder.name} at ${currentHHMM}`,
-        );
-
-        // Browser notification
-        if (
-          typeof window !== "undefined" &&
-          window.Notification &&
-          Notification.permission === "granted"
-        ) {
+          let alreadyFired = false;
           try {
-            new Notification(`Time for ${reminder.name}`, {
-              body: `Take ${reminder.dosage} now`,
-              icon: "/favicon.ico",
-            });
-          } catch (e) {
-            console.warn("[MediRemind] Notification failed:", e);
+            alreadyFired = sessionStorage.getItem(fireKey) === "1";
+          } catch {
+            // sessionStorage unavailable
           }
-        } else {
-          // Fallback to alert
-          window.alert(
-            `⏰ Time for ${reminder.name}\nTake ${reminder.dosage} now`,
-          );
-        }
 
-        // Voice reminder
-        if (typeof window !== "undefined" && window.speechSynthesis) {
+          if (alreadyFired) continue;
+
+          // Mark as fired
           try {
-            const utterance = new SpeechSynthesisUtterance(
-              `Time to take your ${reminder.name} ${reminder.dosage}`,
+            sessionStorage.setItem(fireKey, "1");
+          } catch {
+            // ignore
+          }
+
+          // Browser notification popup
+          if (
+            typeof window !== "undefined" &&
+            window.Notification &&
+            Notification.permission === "granted"
+          ) {
+            try {
+              new Notification(`Time for ${reminder.name}`, {
+                body: `Take ${reminder.dosage} now`,
+                icon: "/favicon.ico",
+              });
+            } catch (e) {
+              console.warn("[MediRemind] Notification failed:", e);
+            }
+          } else {
+            // Fallback to alert if notifications are blocked
+            window.alert(
+              `⏰ Time for ${reminder.name}\nTake ${reminder.dosage} now`,
             );
-            window.speechSynthesis.speak(utterance);
-          } catch (e) {
-            console.warn("[MediRemind] Speech synthesis failed:", e);
+          }
+
+          // Voice reminder via Web Speech API
+          if (typeof window !== "undefined" && window.speechSynthesis) {
+            try {
+              const utterance = new SpeechSynthesisUtterance(
+                `Time to take your ${reminder.name} ${reminder.dosage}`,
+              );
+              window.speechSynthesis.speak(utterance);
+            } catch (e) {
+              console.warn("[MediRemind] Speech synthesis failed:", e);
+            }
           }
         }
       }

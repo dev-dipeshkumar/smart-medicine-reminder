@@ -1,0 +1,24 @@
+{
+  "overview": "MediRemind is a smart medicine reminder app that helps users manage their daily medication schedules. Users can set reminders with dosage and timing, receive browser notifications and voice alerts, look up medicines using OpenFDA with AI-powered summaries, track adherence with charts and streaks, manage a full user profile with medical records, and export their dose history as CSV.",
+  "features": [
+    "Medicine reminders with browser notifications and voice alerts (TTS)",
+    "Medicine lookup via OpenFDA API with Hugging Face AI summaries",
+    "7-day adherence analytics with streak tracker and bar charts",
+    "Dose history log with date filters and CSV export",
+    "User profile management with photo upload",
+    "Medical records: doctor guidance, checkup reports, medication reports",
+    "Username/password authentication with secure sessions",
+    "Dark mode toggle"
+  ],
+  "category": "health",
+  "tags": [
+    "medicine",
+    "reminder",
+    "health",
+    "medication",
+    "adherence",
+    "analytics",
+    "profile"
+  ],
+  "last_updated": "2026-05-06T19:32:27.274Z"
+}

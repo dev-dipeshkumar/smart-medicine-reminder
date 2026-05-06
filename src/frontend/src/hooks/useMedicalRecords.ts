@@ -1,21 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type {
+  CheckupReport as BackendCheckupReport,
+  DoctorGuidance as BackendDoctorGuidance,
+} from "../backend";
 import { useActor } from "./useActor";
 
-export interface DoctorGuidance {
-  id: string;
-  doctorName: string;
-  treatment: string;
-  notes: string;
-  date: string;
-}
-
-export interface CheckupReport {
-  id: string;
-  visitDate: string;
-  doctorName: string;
-  notes: string;
-}
+// Re-export backend types with local names for backward compat
+export type DoctorGuidance = BackendDoctorGuidance;
+export type CheckupReport = BackendCheckupReport;
 
 export function useDoctorGuidance() {
   const { actor, isFetching } = useActor();
@@ -24,9 +17,7 @@ export function useDoctorGuidance() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        return (await (
-          actor as any
-        ).getAllDoctorGuidance()) as DoctorGuidance[];
+        return await actor.getAllDoctorGuidance();
       } catch {
         return [];
       }
@@ -41,7 +32,7 @@ export function useAddDoctorGuidance() {
   return useMutation({
     mutationFn: async (guidance: DoctorGuidance) => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).addDoctorGuidance(guidance);
+      await actor.addDoctorGuidance(guidance);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
@@ -57,7 +48,7 @@ export function useUpdateDoctorGuidance() {
   return useMutation({
     mutationFn: async (guidance: DoctorGuidance) => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).updateDoctorGuidance(guidance);
+      await actor.updateDoctorGuidance(guidance);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
@@ -73,7 +64,7 @@ export function useDeleteDoctorGuidance() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).deleteDoctorGuidance(id);
+      await actor.deleteDoctorGuidance(id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
@@ -90,7 +81,7 @@ export function useCheckupReports() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        return (await (actor as any).getAllCheckupReports()) as CheckupReport[];
+        return await actor.getAllCheckupReports();
       } catch {
         return [];
       }
@@ -105,7 +96,7 @@ export function useAddCheckupReport() {
   return useMutation({
     mutationFn: async (report: CheckupReport) => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).addCheckupReport(report);
+      await actor.addCheckupReport(report);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checkupReports"] });
@@ -121,7 +112,7 @@ export function useUpdateCheckupReport() {
   return useMutation({
     mutationFn: async (report: CheckupReport) => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).updateCheckupReport(report);
+      await actor.updateCheckupReport(report);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checkupReports"] });
@@ -137,7 +128,7 @@ export function useDeleteCheckupReport() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!actor) throw new Error("Not connected");
-      await (actor as any).deleteCheckupReport(id);
+      await actor.deleteCheckupReport(id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["checkupReports"] });

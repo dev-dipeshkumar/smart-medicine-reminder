@@ -1,2 +1,2 @@
-// Re-export from context so existing imports continue to work
+// Re-export from context so all imports resolve correctly
 export { useAuth, type AuthState } from "./AuthContext";

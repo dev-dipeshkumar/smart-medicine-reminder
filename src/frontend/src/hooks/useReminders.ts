@@ -1,13 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { DoseLog, MedicineReminder } from "../backend";
+import type { DayStats, DoseLog, MedicineReminder } from "../backend";
+import { DoseStatus } from "../backend";
 import { useActor } from "./useActor";
-
-function todayStartNS(): bigint {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return BigInt(start.getTime()) * 1_000_000n;
-}
 
 export function useReminders() {
   const { actor, isFetching } = useActor();
@@ -15,7 +10,11 @@ export function useReminders() {
     queryKey: ["reminders"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllReminders();
+      try {
+        return await actor.getAllReminders();
+      } catch {
+        return [];
+      }
     },
     enabled: !!actor && !isFetching,
   });
@@ -26,7 +25,7 @@ export function useCreateReminder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (reminder: MedicineReminder) => {
-      if (!actor) throw new Error("Not connected");
+      if (!actor) throw new Error("Not authenticated");
       await actor.createReminder(reminder);
     },
     onSuccess: () => {
@@ -42,7 +41,7 @@ export function useUpdateReminder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (reminder: MedicineReminder) => {
-      if (!actor) throw new Error("Not connected");
+      if (!actor) throw new Error("Not authenticated");
       await actor.updateReminder(reminder);
     },
     onSuccess: () => {
@@ -58,7 +57,7 @@ export function useDeleteReminder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      if (!actor) throw new Error("Not connected");
+      if (!actor) throw new Error("Not authenticated");
       await actor.deleteReminder(id);
     },
     onSuccess: () => {
@@ -69,26 +68,60 @@ export function useDeleteReminder() {
   });
 }
 
+export function useLogDose() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (log: DoseLog) => {
+      if (!actor) throw new Error("Not authenticated");
+      await actor.logDose(log);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dose-log"] });
+      qc.invalidateQueries({ queryKey: ["reminders"] });
+      qc.invalidateQueries({ queryKey: ["today-stats"] });
+      qc.invalidateQueries({ queryKey: ["streak"] });
+      toast.success("Dose logged");
+    },
+    onError: () => toast.error("Failed to log dose"),
+  });
+}
+
 export function useTodayStats() {
   const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["todayStats"],
+  return useQuery<DayStats | null>({
+    queryKey: ["today-stats"],
     queryFn: async () => {
       if (!actor) return null;
-      return actor.getDayStats(todayStartNS());
+      try {
+        const now = new Date();
+        const start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
+        const startNS = BigInt(start.getTime()) * 1_000_000n;
+        return await actor.getDayStats(startNS);
+      } catch {
+        return null;
+      }
     },
     enabled: !!actor && !isFetching,
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
 }
 
 export function useCurrentStreak() {
   const { actor, isFetching } = useActor();
-  return useQuery({
+  return useQuery<bigint>({
     queryKey: ["streak"],
     queryFn: async () => {
       if (!actor) return 0n;
-      return actor.getCurrentStreak();
+      try {
+        return await actor.getCurrentStreak();
+      } catch {
+        return 0n;
+      }
     },
     enabled: !!actor && !isFetching,
   });
@@ -96,30 +129,16 @@ export function useCurrentStreak() {
 
 export function useWeekStats() {
   const { actor, isFetching } = useActor();
-  return useQuery({
-    queryKey: ["weekStats"],
+  return useQuery<[bigint, DayStats][]>({
+    queryKey: ["week-stats"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getPastNDayStats(7n);
+      try {
+        return await actor.getPastNDayStats(7n);
+      } catch {
+        return [];
+      }
     },
     enabled: !!actor && !isFetching,
-  });
-}
-
-export function useLogDose() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (log: DoseLog) => {
-      if (!actor) throw new Error("Not connected");
-      await actor.logDose(log);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["todayStats"] });
-      qc.invalidateQueries({ queryKey: ["allLogs"] });
-      qc.invalidateQueries({ queryKey: ["streak"] });
-      qc.invalidateQueries({ queryKey: ["weekStats"] });
-    },
-    onError: () => toast.error("Failed to log dose"),
   });
 }

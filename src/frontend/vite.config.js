@@ -14,10 +14,28 @@ process.env.STORAGE_GATEWAY_URL =
 
 export default defineConfig({
   logLevel: "error",
+  base: "/",
   build: {
     emptyOutDir: true,
     sourcemap: false,
-    minify: false,
+    minify: "esbuild",
+    target: "es2020",
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+          "dfinity-vendor": [
+            "@dfinity/agent",
+            "@dfinity/auth-client",
+            "@dfinity/identity",
+            "@dfinity/principal",
+            "@dfinity/candid",
+          ],
+          "query-vendor": ["@tanstack/react-query"],
+        },
+      },
+    },
   },
   css: {
     postcss: "./postcss.config.js",

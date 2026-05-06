@@ -568,31 +568,30 @@ function AppInner() {
     }
   }, [darkMode]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: updateProfile ref changes every render
   useEffect(() => {
+    if (!isAuthenticated || updateProfile.isPending) return;
     const pendingName = sessionStorage.getItem("reg_fullname");
     const pendingAge = sessionStorage.getItem("reg_age");
     const pendingGender = sessionStorage.getItem("reg_gender");
     const pendingLocality = sessionStorage.getItem("reg_locality");
     const hasPending =
       pendingName || pendingAge || pendingGender || pendingLocality;
-    if (hasPending && isAuthenticated && profile !== undefined) {
-      sessionStorage.removeItem("reg_fullname");
-      sessionStorage.removeItem("reg_email");
-      sessionStorage.removeItem("reg_age");
-      sessionStorage.removeItem("reg_gender");
-      sessionStorage.removeItem("reg_locality");
-      updateProfile.mutate({
-        name: pendingName?.trim() || profile?.name || "",
-        age: pendingAge
-          ? BigInt(Math.floor(Number(pendingAge)))
-          : (profile?.age ?? BigInt(0)),
-        gender: pendingGender || profile?.gender || "",
-        locality: pendingLocality?.trim() || profile?.locality || "",
-        photoUrl: profile?.photoUrl ?? "",
-        lastUpdated: BigInt(Date.now()),
-      });
-    }
-  }, [isAuthenticated, profile, updateProfile.mutate]);
+    if (!hasPending) return;
+    sessionStorage.removeItem("reg_fullname");
+    sessionStorage.removeItem("reg_email");
+    sessionStorage.removeItem("reg_age");
+    sessionStorage.removeItem("reg_gender");
+    sessionStorage.removeItem("reg_locality");
+    updateProfile.mutate({
+      name: pendingName?.trim() ?? "",
+      age: pendingAge ? BigInt(Math.floor(Number(pendingAge))) : 0n,
+      gender: pendingGender ?? "",
+      locality: pendingLocality?.trim() ?? "",
+      photoUrl: "",
+      lastUpdated: BigInt(Date.now()) * 1_000_000n,
+    });
+  }, [isAuthenticated]);
 
   if (isInitializing) {
     return (

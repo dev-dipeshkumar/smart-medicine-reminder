@@ -189,6 +189,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsInitializing(false);
   }, []);
 
+  // Safety timeout: if II never finishes initializing, unblock the app after 5s
+  useEffect(() => {
+    if (!ii.isInitializing) return;
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 5_000);
+    return () => clearTimeout(timer);
+  }, [ii.isInitializing]);
+
   useEffect(() => {
     if (ii.isLoginSuccess && ii.identity) {
       const principal = ii.identity.getPrincipal().toString();

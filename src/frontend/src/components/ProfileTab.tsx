@@ -93,23 +93,29 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
     return Object.keys(e).length === 0;
   };
 
-  const handlePhotoUpload = async (file: File) => {
-    setUploadingPhoto(true);
-    try {
-      // Try blob-storage first
-      const { ExternalBlob } = await import("../backend");
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const blob = ExternalBlob.fromBytes(bytes);
-      await blob.getBytes();
-      const url = blob.getDirectURL();
-      setForm((prev) => ({ ...prev, photoUrl: url }));
-    } catch {
-      // Fallback to object URL
-      const url = URL.createObjectURL(file);
-      setForm((prev) => ({ ...prev, photoUrl: url }));
-    } finally {
-      setUploadingPhoto(false);
+  const handlePhotoUpload = (file: File) => {
+    if (file.size > 500 * 1024) {
+      setErrors((prev) => ({
+        ...prev,
+        photo: "Photo must be under 500KB",
+      }));
+      return;
     }
+    setErrors((prev) => {
+      const { photo: _removed, ...rest } = prev;
+      return rest;
+    });
+    setUploadingPhoto(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      setForm((prev) => ({ ...prev, photoUrl: base64 }));
+      setUploadingPhoto(false);
+    };
+    reader.onerror = () => {
+      setUploadingPhoto(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
@@ -277,8 +283,13 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
                     if (file) handlePhotoUpload(file);
                   }}
                 />
+                {errors.photo && (
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.photo}
+                  </p>
+                )}
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Optional · JPG, PNG up to 5 MB
+                  Optional · JPG, PNG up to 500 KB
                 </p>
               </div>
             </div>
