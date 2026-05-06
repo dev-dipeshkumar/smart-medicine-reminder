@@ -7,16 +7,38 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
 export interface DoseLog {
     status: DoseStatus;
     snoozeMinutes?: bigint;
     reminderId: string;
     timestamp: bigint;
 }
-export interface TransformationOutput {
+export interface CheckupReport {
+    id: string;
+    visitDate: string;
+    notes: string;
+    doctorName: string;
+}
+export interface http_request_result {
     status: bigint;
     body: Uint8Array;
     headers: Array<http_header>;
+}
+export interface http_header {
+    value: string;
+    name: string;
+}
+export interface DoctorGuidance {
+    id: string;
+    date: string;
+    treatment: string;
+    notes: string;
+    doctorName: string;
 }
 export interface DayStats {
     missedDoses: bigint;
@@ -49,34 +71,12 @@ export interface ReminderDayStats {
     totalDoses: bigint;
 }
 export interface UserProfile {
-    name: string;
     age: bigint;
+    name: string;
+    lastUpdated: bigint;
+    photoUrl: string;
     gender: string;
     locality: string;
-    photoUrl: string;
-    lastUpdated: bigint;
-}
-export interface DoctorGuidance {
-    id: string;
-    doctorName: string;
-    treatment: string;
-    notes: string;
-    date: string;
-}
-export interface CheckupReport {
-    id: string;
-    visitDate: string;
-    doctorName: string;
-    notes: string;
-}
-export interface http_header {
-    value: string;
-    name: string;
-}
-export interface http_request_result {
-    status: bigint;
-    body: Uint8Array;
-    headers: Array<http_header>;
 }
 export enum DoseStatus {
     taken = "taken",
@@ -95,11 +95,17 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addCheckupReport(report: CheckupReport): Promise<void>;
+    addDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createReminder(reminder: MedicineReminder): Promise<void>;
+    deleteCheckupReport(reportId: string): Promise<void>;
+    deleteDoctorGuidance(guidanceId: string): Promise<void>;
     deleteReminder(reminderId: string): Promise<void>;
+    getAllCheckupReports(): Promise<Array<CheckupReport>>;
     getAllDayLogs(dayStartNS: bigint): Promise<Array<DoseLog>>;
     getAllDayLogsRange(startTimeNS: bigint, endTimeNS: bigint): Promise<Array<DoseLog>>;
+    getAllDoctorGuidance(): Promise<Array<DoctorGuidance>>;
     getAllLogs(): Promise<Array<DoseLog>>;
     getAllReminderDayStats(dayStartNS: bigint): Promise<Array<ReminderDayStats>>;
     getAllReminderDayStatsRange(startTimeNS: bigint, endTimeNS: bigint): Promise<Array<ReminderDayStats>>;
@@ -109,8 +115,9 @@ export interface backendInterface {
     getCurrentStreak(): Promise<bigint>;
     getDayStats(dayStartNS: bigint): Promise<DayStats>;
     getDayStatsRange(startTimeNS: bigint, endTimeNS: bigint): Promise<DayStats>;
-    getMedicineInfo(brandName: string): Promise<string>;
+    getMedicineInfo(searchQuery: string): Promise<string>;
     getPastNDayStats(nDays: bigint): Promise<Array<[bigint, DayStats]>>;
+    getProfile(): Promise<UserProfile | null>;
     getReminder(reminderId: string): Promise<MedicineReminder>;
     getReminderDayLogs(reminderId: string, dayStartNS: bigint): Promise<Array<DoseLog>>;
     getReminderDayLogsRange(reminderId: string, startTimeNS: bigint, endTimeNS: bigint): Promise<Array<DoseLog>>;
@@ -119,18 +126,8 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     logDose(doseLog: DoseLog): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
-    updateReminder(reminder: MedicineReminder): Promise<void>;
-    // Profile
-    getProfile(): Promise<UserProfile | undefined>;
-    updateProfile(profile: UserProfile): Promise<void>;
-    // Doctor Guidance
-    getAllDoctorGuidance(): Promise<Array<DoctorGuidance>>;
-    addDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
-    updateDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
-    deleteDoctorGuidance(guidanceId: string): Promise<void>;
-    // Checkup Reports
-    getAllCheckupReports(): Promise<Array<CheckupReport>>;
-    addCheckupReport(report: CheckupReport): Promise<void>;
     updateCheckupReport(report: CheckupReport): Promise<void>;
-    deleteCheckupReport(reportId: string): Promise<void>;
+    updateDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
+    updateProfile(profile: UserProfile): Promise<void>;
+    updateReminder(reminder: MedicineReminder): Promise<void>;
 }

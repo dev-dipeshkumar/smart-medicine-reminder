@@ -10,9 +10,9 @@ import Bool "mo:core/Bool";
 import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
 import Iter "mo:core/Iter";
-import OutCall "http-outcalls/outcall";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
+import OutCall "mo:caffeineai-http-outcalls/outcall";
+import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
+import AccessControl "mo:caffeineai-authorization/access-control";
 
 actor {
   let nanosecondsPerDay = 24 * 60 * 60 * 1_000_000_000;

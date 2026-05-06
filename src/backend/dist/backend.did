@@ -1,0 +1,148 @@
+type http_request_result = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type http_header = 
+ record {
+   name: text;
+   value: text;
+ };
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type UserProfile = 
+ record {
+   age: nat;
+   gender: text;
+   lastUpdated: int;
+   locality: text;
+   name: text;
+   photoUrl: text;
+ };
+type TransformationOutput = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type TransformationInput = 
+ record {
+   context: blob;
+   response: http_request_result;
+ };
+type ReminderDayStats = 
+ record {
+   adherenceRate: float64;
+   missedDoses: nat;
+   reminderId: text;
+   reminderName: text;
+   snoozedDoses: nat;
+   takenDoses: nat;
+   totalDoses: nat;
+ };
+type MedicineReminder = 
+ record {
+   color: text;
+   dosage: text;
+   frequency: Frequency;
+   id: text;
+   isActive: bool;
+   name: text;
+   notes: text;
+   times: vec text;
+ };
+type Frequency = 
+ variant {
+   asNeeded;
+   daily;
+   twiceDaily;
+   weekly;
+ };
+type DoseStatus = 
+ variant {
+   missed;
+   snoozed;
+   taken;
+ };
+type DoseLog = 
+ record {
+   reminderId: text;
+   snoozeMinutes: opt int;
+   status: DoseStatus;
+   timestamp: int;
+ };
+type DoctorGuidance = 
+ record {
+   date: text;
+   doctorName: text;
+   id: text;
+   notes: text;
+   treatment: text;
+ };
+type DayStats = 
+ record {
+   date: text;
+   missedDoses: nat;
+   snoozedDoses: nat;
+   takenDoses: nat;
+   totalDoses: nat;
+ };
+type CheckupReport = 
+ record {
+   doctorName: text;
+   id: text;
+   notes: text;
+   visitDate: text;
+ };
+service : {
+  _initializeAccessControl: () -> ();
+  addCheckupReport: (report: CheckupReport) -> ();
+  addDoctorGuidance: (guidance: DoctorGuidance) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  createReminder: (reminder: MedicineReminder) -> ();
+  deleteCheckupReport: (reportId: text) -> ();
+  deleteDoctorGuidance: (guidanceId: text) -> ();
+  deleteReminder: (reminderId: text) -> ();
+  getAllCheckupReports: () -> (vec CheckupReport) query;
+  getAllDayLogs: (dayStartNS: int) -> (vec DoseLog) query;
+  getAllDayLogsRange: (startTimeNS: int, endTimeNS: int) ->
+   (vec DoseLog) query;
+  getAllDoctorGuidance: () -> (vec DoctorGuidance) query;
+  getAllLogs: () -> (vec DoseLog) query;
+  getAllReminderDayStats: (dayStartNS: int) -> (vec ReminderDayStats) query;
+  getAllReminderDayStatsRange: (startTimeNS: int, endTimeNS: int) ->
+   (vec ReminderDayStats) query;
+  getAllReminderLogs: (reminderId: text) -> (vec DoseLog) query;
+  getAllReminders: () -> (vec MedicineReminder) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getCurrentStreak: () -> (nat) query;
+  getDayStats: (dayStartNS: int) -> (DayStats) query;
+  getDayStatsRange: (startTimeNS: int, endTimeNS: int) -> (DayStats) query;
+  getMedicineInfo: (searchQuery: text) -> (text);
+  getPastNDayStats: (nDays: nat) -> (vec record {
+                                           int;
+                                           DayStats;
+                                         }) query;
+  getProfile: () -> (opt UserProfile) query;
+  getReminder: (reminderId: text) -> (MedicineReminder) query;
+  getReminderDayLogs: (reminderId: text, dayStartNS: int) ->
+   (vec DoseLog) query;
+  getReminderDayLogsRange: (reminderId: text, startTimeNS: int, endTimeNS:
+   int) -> (vec DoseLog) query;
+  getReminderDayStats: (reminderId: text, dayStartNS: int) ->
+   (ReminderDayStats) query;
+  getReminderDayStatsRange: (reminderId: text, startTimeNS: int, endTimeNS:
+   int) -> (ReminderDayStats) query;
+  isCallerAdmin: () -> (bool) query;
+  logDose: (doseLog: DoseLog) -> ();
+  transform: (input: TransformationInput) -> (TransformationOutput) query;
+  updateCheckupReport: (report: CheckupReport) -> ();
+  updateDoctorGuidance: (guidance: DoctorGuidance) -> ();
+  updateProfile: (profile: UserProfile) -> ();
+  updateReminder: (reminder: MedicineReminder) -> ();
+}

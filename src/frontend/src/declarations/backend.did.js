@@ -8,6 +8,19 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const CheckupReport = IDL.Record({
+  'id' : IDL.Text,
+  'visitDate' : IDL.Text,
+  'notes' : IDL.Text,
+  'doctorName' : IDL.Text,
+});
+export const DoctorGuidance = IDL.Record({
+  'id' : IDL.Text,
+  'date' : IDL.Text,
+  'treatment' : IDL.Text,
+  'notes' : IDL.Text,
+  'doctorName' : IDL.Text,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -56,6 +69,14 @@ export const DayStats = IDL.Record({
   'snoozedDoses' : IDL.Nat,
   'totalDoses' : IDL.Nat,
 });
+export const UserProfile = IDL.Record({
+  'age' : IDL.Nat,
+  'name' : IDL.Text,
+  'lastUpdated' : IDL.Int,
+  'photoUrl' : IDL.Text,
+  'gender' : IDL.Text,
+  'locality' : IDL.Text,
+});
 export const http_header = IDL.Record({
   'value' : IDL.Text,
   'name' : IDL.Text,
@@ -76,16 +97,22 @@ export const TransformationOutput = IDL.Record({
 });
 
 export const idlService = IDL.Service({
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  '_initializeAccessControl' : IDL.Func([], [], []),
+  'addCheckupReport' : IDL.Func([CheckupReport], [], []),
+  'addDoctorGuidance' : IDL.Func([DoctorGuidance], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createReminder' : IDL.Func([MedicineReminder], [], []),
+  'deleteCheckupReport' : IDL.Func([IDL.Text], [], []),
+  'deleteDoctorGuidance' : IDL.Func([IDL.Text], [], []),
   'deleteReminder' : IDL.Func([IDL.Text], [], []),
+  'getAllCheckupReports' : IDL.Func([], [IDL.Vec(CheckupReport)], ['query']),
   'getAllDayLogs' : IDL.Func([IDL.Int], [IDL.Vec(DoseLog)], ['query']),
   'getAllDayLogsRange' : IDL.Func(
       [IDL.Int, IDL.Int],
       [IDL.Vec(DoseLog)],
       ['query'],
     ),
+  'getAllDoctorGuidance' : IDL.Func([], [IDL.Vec(DoctorGuidance)], ['query']),
   'getAllLogs' : IDL.Func([], [IDL.Vec(DoseLog)], ['query']),
   'getAllReminderDayStats' : IDL.Func(
       [IDL.Int],
@@ -109,6 +136,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(IDL.Tuple(IDL.Int, DayStats))],
       ['query'],
     ),
+  'getProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getReminder' : IDL.Func([IDL.Text], [MedicineReminder], ['query']),
   'getReminderDayLogs' : IDL.Func(
       [IDL.Text, IDL.Int],
@@ -137,12 +165,28 @@ export const idlService = IDL.Service({
       [TransformationOutput],
       ['query'],
     ),
+  'updateCheckupReport' : IDL.Func([CheckupReport], [], []),
+  'updateDoctorGuidance' : IDL.Func([DoctorGuidance], [], []),
+  'updateProfile' : IDL.Func([UserProfile], [], []),
   'updateReminder' : IDL.Func([MedicineReminder], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const CheckupReport = IDL.Record({
+    'id' : IDL.Text,
+    'visitDate' : IDL.Text,
+    'notes' : IDL.Text,
+    'doctorName' : IDL.Text,
+  });
+  const DoctorGuidance = IDL.Record({
+    'id' : IDL.Text,
+    'date' : IDL.Text,
+    'treatment' : IDL.Text,
+    'notes' : IDL.Text,
+    'doctorName' : IDL.Text,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -191,6 +235,14 @@ export const idlFactory = ({ IDL }) => {
     'snoozedDoses' : IDL.Nat,
     'totalDoses' : IDL.Nat,
   });
+  const UserProfile = IDL.Record({
+    'age' : IDL.Nat,
+    'name' : IDL.Text,
+    'lastUpdated' : IDL.Int,
+    'photoUrl' : IDL.Text,
+    'gender' : IDL.Text,
+    'locality' : IDL.Text,
+  });
   const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
   const http_request_result = IDL.Record({
     'status' : IDL.Nat,
@@ -208,16 +260,22 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    '_initializeAccessControl' : IDL.Func([], [], []),
+    'addCheckupReport' : IDL.Func([CheckupReport], [], []),
+    'addDoctorGuidance' : IDL.Func([DoctorGuidance], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createReminder' : IDL.Func([MedicineReminder], [], []),
+    'deleteCheckupReport' : IDL.Func([IDL.Text], [], []),
+    'deleteDoctorGuidance' : IDL.Func([IDL.Text], [], []),
     'deleteReminder' : IDL.Func([IDL.Text], [], []),
+    'getAllCheckupReports' : IDL.Func([], [IDL.Vec(CheckupReport)], ['query']),
     'getAllDayLogs' : IDL.Func([IDL.Int], [IDL.Vec(DoseLog)], ['query']),
     'getAllDayLogsRange' : IDL.Func(
         [IDL.Int, IDL.Int],
         [IDL.Vec(DoseLog)],
         ['query'],
       ),
+    'getAllDoctorGuidance' : IDL.Func([], [IDL.Vec(DoctorGuidance)], ['query']),
     'getAllLogs' : IDL.Func([], [IDL.Vec(DoseLog)], ['query']),
     'getAllReminderDayStats' : IDL.Func(
         [IDL.Int],
@@ -241,6 +299,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Int, DayStats))],
         ['query'],
       ),
+    'getProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getReminder' : IDL.Func([IDL.Text], [MedicineReminder], ['query']),
     'getReminderDayLogs' : IDL.Func(
         [IDL.Text, IDL.Int],
@@ -269,6 +328,9 @@ export const idlFactory = ({ IDL }) => {
         [TransformationOutput],
         ['query'],
       ),
+    'updateCheckupReport' : IDL.Func([CheckupReport], [], []),
+    'updateDoctorGuidance' : IDL.Func([DoctorGuidance], [], []),
+    'updateProfile' : IDL.Func([UserProfile], [], []),
     'updateReminder' : IDL.Func([MedicineReminder], [], []),
   });
 };

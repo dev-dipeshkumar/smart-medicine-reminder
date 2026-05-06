@@ -10,12 +10,25 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface CheckupReport {
+  'id' : string,
+  'visitDate' : string,
+  'notes' : string,
+  'doctorName' : string,
+}
 export interface DayStats {
   'missedDoses' : bigint,
   'date' : string,
   'takenDoses' : bigint,
   'snoozedDoses' : bigint,
   'totalDoses' : bigint,
+}
+export interface DoctorGuidance {
+  'id' : string,
+  'date' : string,
+  'treatment' : string,
+  'notes' : string,
+  'doctorName' : string,
 }
 export interface DoseLog {
   'status' : DoseStatus,
@@ -58,6 +71,14 @@ export interface TransformationOutput {
   'body' : Uint8Array,
   'headers' : Array<http_header>,
 }
+export interface UserProfile {
+  'age' : bigint,
+  'name' : string,
+  'lastUpdated' : bigint,
+  'photoUrl' : string,
+  'gender' : string,
+  'locality' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -68,12 +89,18 @@ export interface http_request_result {
   'headers' : Array<http_header>,
 }
 export interface _SERVICE {
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  '_initializeAccessControl' : ActorMethod<[], undefined>,
+  'addCheckupReport' : ActorMethod<[CheckupReport], undefined>,
+  'addDoctorGuidance' : ActorMethod<[DoctorGuidance], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createReminder' : ActorMethod<[MedicineReminder], undefined>,
+  'deleteCheckupReport' : ActorMethod<[string], undefined>,
+  'deleteDoctorGuidance' : ActorMethod<[string], undefined>,
   'deleteReminder' : ActorMethod<[string], undefined>,
+  'getAllCheckupReports' : ActorMethod<[], Array<CheckupReport>>,
   'getAllDayLogs' : ActorMethod<[bigint], Array<DoseLog>>,
   'getAllDayLogsRange' : ActorMethod<[bigint, bigint], Array<DoseLog>>,
+  'getAllDoctorGuidance' : ActorMethod<[], Array<DoctorGuidance>>,
   'getAllLogs' : ActorMethod<[], Array<DoseLog>>,
   'getAllReminderDayStats' : ActorMethod<[bigint], Array<ReminderDayStats>>,
   'getAllReminderDayStatsRange' : ActorMethod<
@@ -88,6 +115,7 @@ export interface _SERVICE {
   'getDayStatsRange' : ActorMethod<[bigint, bigint], DayStats>,
   'getMedicineInfo' : ActorMethod<[string], string>,
   'getPastNDayStats' : ActorMethod<[bigint], Array<[bigint, DayStats]>>,
+  'getProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getReminder' : ActorMethod<[string], MedicineReminder>,
   'getReminderDayLogs' : ActorMethod<[string, bigint], Array<DoseLog>>,
   'getReminderDayLogsRange' : ActorMethod<
@@ -102,6 +130,9 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'logDose' : ActorMethod<[DoseLog], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
+  'updateCheckupReport' : ActorMethod<[CheckupReport], undefined>,
+  'updateDoctorGuidance' : ActorMethod<[DoctorGuidance], undefined>,
+  'updateProfile' : ActorMethod<[UserProfile], undefined>,
   'updateReminder' : ActorMethod<[MedicineReminder], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

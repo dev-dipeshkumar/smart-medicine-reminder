@@ -1,0 +1,88 @@
+// Version: 1.0.0
+type CheckupReport__960056958 =
+  {doctorName : Text; id : Text; notes : Text; visitDate : Text};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type DoctorGuidance__410500739 =
+  {date : Text; doctorName : Text; id : Text; notes : Text; treatment : Text};
+type DoseLog__337826282 =
+  {
+    reminderId : Text;
+    snoozeMinutes : ?Int;
+    status : DoseStatus__822162361;
+    timestamp : Int
+  };
+type DoseStatus__822162361 = {#missed; #snoozed; #taken};
+type Frequency__705146714 = {#asNeeded; #daily; #twiceDaily; #weekly};
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type MedicineReminder__332719570 =
+  {
+    color : Text;
+    dosage : Text;
+    frequency : Frequency__705146714;
+    id : Text;
+    isActive : Bool;
+    name : Text;
+    notes : Text;
+    times : [Text]
+  };
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type UserProfile__491224006 =
+  {
+    age : Nat;
+    gender : Text;
+    lastUpdated : Int;
+    locality : Text;
+    name : Text;
+    photoUrl : Text
+  };
+type UserRole__1073662873 = {#admin; #guest; #user};
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__1073662873>
+    };
+  stable checkupReports :
+    {
+      var root :
+        Node__46230540<Principal,
+                        Map__605269027<Text, CheckupReport__960056958>>;
+      var size : Nat__490723111
+    };
+  stable doctorGuidances :
+    {
+      var root :
+        Node__46230540<Principal,
+                        Map__605269027<Text, DoctorGuidance__410500739>>;
+      var size : Nat__490723111
+    };
+  stable logs :
+    {
+      var root :
+        Node__46230540<Principal, Map__605269027<Text, DoseLog__337826282>>;
+      var size : Nat__490723111
+    };
+  stable nanosecondsPerDay : Nat;
+  stable profiles :
+    {
+      var root : Node__46230540<Principal, UserProfile__491224006>;
+      var size : Nat__490723111
+    };
+  stable reminders :
+    {
+      var root :
+        Node__46230540<Principal,
+                        Map__605269027<Text, MedicineReminder__332719570>>;
+      var size : Nat__490723111
+    }
+};

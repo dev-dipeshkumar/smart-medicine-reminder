@@ -89,16 +89,38 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface TransformationOutput {
+    status: bigint;
+    body: Uint8Array;
+    headers: Array<http_header>;
+}
 export interface DoseLog {
     status: DoseStatus;
     snoozeMinutes?: bigint;
     reminderId: string;
     timestamp: bigint;
 }
-export interface TransformationOutput {
+export interface CheckupReport {
+    id: string;
+    visitDate: string;
+    notes: string;
+    doctorName: string;
+}
+export interface http_request_result {
     status: bigint;
     body: Uint8Array;
     headers: Array<http_header>;
+}
+export interface http_header {
+    value: string;
+    name: string;
+}
+export interface DoctorGuidance {
+    id: string;
+    date: string;
+    treatment: string;
+    notes: string;
+    doctorName: string;
 }
 export interface DayStats {
     missedDoses: bigint;
@@ -130,14 +152,13 @@ export interface ReminderDayStats {
     snoozedDoses: bigint;
     totalDoses: bigint;
 }
-export interface http_header {
-    value: string;
+export interface UserProfile {
+    age: bigint;
     name: string;
-}
-export interface http_request_result {
-    status: bigint;
-    body: Uint8Array;
-    headers: Array<http_header>;
+    lastUpdated: bigint;
+    photoUrl: string;
+    gender: string;
+    locality: string;
 }
 export enum DoseStatus {
     taken = "taken",
@@ -156,12 +177,18 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
-    _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    _initializeAccessControl(): Promise<void>;
+    addCheckupReport(report: CheckupReport): Promise<void>;
+    addDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createReminder(reminder: MedicineReminder): Promise<void>;
+    deleteCheckupReport(reportId: string): Promise<void>;
+    deleteDoctorGuidance(guidanceId: string): Promise<void>;
     deleteReminder(reminderId: string): Promise<void>;
+    getAllCheckupReports(): Promise<Array<CheckupReport>>;
     getAllDayLogs(dayStartNS: bigint): Promise<Array<DoseLog>>;
     getAllDayLogsRange(startTimeNS: bigint, endTimeNS: bigint): Promise<Array<DoseLog>>;
+    getAllDoctorGuidance(): Promise<Array<DoctorGuidance>>;
     getAllLogs(): Promise<Array<DoseLog>>;
     getAllReminderDayStats(dayStartNS: bigint): Promise<Array<ReminderDayStats>>;
     getAllReminderDayStatsRange(startTimeNS: bigint, endTimeNS: bigint): Promise<Array<ReminderDayStats>>;
@@ -171,8 +198,9 @@ export interface backendInterface {
     getCurrentStreak(): Promise<bigint>;
     getDayStats(dayStartNS: bigint): Promise<DayStats>;
     getDayStatsRange(startTimeNS: bigint, endTimeNS: bigint): Promise<DayStats>;
-    getMedicineInfo(brandName: string): Promise<string>;
+    getMedicineInfo(searchQuery: string): Promise<string>;
     getPastNDayStats(nDays: bigint): Promise<Array<[bigint, DayStats]>>;
+    getProfile(): Promise<UserProfile | null>;
     getReminder(reminderId: string): Promise<MedicineReminder>;
     getReminderDayLogs(reminderId: string, dayStartNS: bigint): Promise<Array<DoseLog>>;
     getReminderDayLogsRange(reminderId: string, startTimeNS: bigint, endTimeNS: bigint): Promise<Array<DoseLog>>;
@@ -181,22 +209,53 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     logDose(doseLog: DoseLog): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
+    updateCheckupReport(report: CheckupReport): Promise<void>;
+    updateDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
+    updateProfile(profile: UserProfile): Promise<void>;
     updateReminder(reminder: MedicineReminder): Promise<void>;
 }
-import type { DoseLog as _DoseLog, DoseStatus as _DoseStatus, Frequency as _Frequency, MedicineReminder as _MedicineReminder, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { DoseLog as _DoseLog, DoseStatus as _DoseStatus, Frequency as _Frequency, MedicineReminder as _MedicineReminder, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
+    async _initializeAccessControl(): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor._initializeAccessControlWithSecret(arg0);
+                const result = await this.actor._initializeAccessControl();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            const result = await this.actor._initializeAccessControl();
+            return result;
+        }
+    }
+    async addCheckupReport(arg0: CheckupReport): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addCheckupReport(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addCheckupReport(arg0);
+            return result;
+        }
+    }
+    async addDoctorGuidance(arg0: DoctorGuidance): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addDoctorGuidance(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addDoctorGuidance(arg0);
             return result;
         }
     }
@@ -228,6 +287,34 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteCheckupReport(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteCheckupReport(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteCheckupReport(arg0);
+            return result;
+        }
+    }
+    async deleteDoctorGuidance(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteDoctorGuidance(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteDoctorGuidance(arg0);
+            return result;
+        }
+    }
     async deleteReminder(arg0: string): Promise<void> {
         if (this.processError) {
             try {
@@ -239,6 +326,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteReminder(arg0);
+            return result;
+        }
+    }
+    async getAllCheckupReports(): Promise<Array<CheckupReport>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllCheckupReports();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllCheckupReports();
             return result;
         }
     }
@@ -268,6 +369,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getAllDayLogsRange(arg0, arg1);
             return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllDoctorGuidance(): Promise<Array<DoctorGuidance>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllDoctorGuidance();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllDoctorGuidance();
+            return result;
         }
     }
     async getAllLogs(): Promise<Array<DoseLog>> {
@@ -424,6 +539,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getProfile(): Promise<UserProfile | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getProfile();
+                return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getProfile();
+            return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getReminder(arg0: string): Promise<MedicineReminder> {
         if (this.processError) {
             try {
@@ -511,14 +640,14 @@ export class Backend implements backendInterface {
     async logDose(arg0: DoseLog): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.logDose(to_candid_DoseLog_n20(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.logDose(to_candid_DoseLog_n21(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.logDose(to_candid_DoseLog_n20(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.logDose(to_candid_DoseLog_n21(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -533,6 +662,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.transform(arg0);
+            return result;
+        }
+    }
+    async updateCheckupReport(arg0: CheckupReport): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateCheckupReport(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateCheckupReport(arg0);
+            return result;
+        }
+    }
+    async updateDoctorGuidance(arg0: DoctorGuidance): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateDoctorGuidance(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateDoctorGuidance(arg0);
+            return result;
+        }
+    }
+    async updateProfile(arg0: UserProfile): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateProfile(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateProfile(arg0);
             return result;
         }
     }
@@ -567,6 +738,9 @@ function from_candid_UserRole_n18(_uploadFile: (file: ExternalBlob) => Promise<U
     return from_candid_variant_n19(_uploadFile, _downloadFile, value);
 }
 function from_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -652,11 +826,11 @@ function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function from_candid_vec_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_DoseLog>): Array<DoseLog> {
     return value.map((x)=>from_candid_DoseLog_n8(_uploadFile, _downloadFile, x));
 }
-function to_candid_DoseLog_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseLog): _DoseLog {
-    return to_candid_record_n21(_uploadFile, _downloadFile, value);
+function to_candid_DoseLog_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseLog): _DoseLog {
+    return to_candid_record_n22(_uploadFile, _downloadFile, value);
 }
-function to_candid_DoseStatus_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): _DoseStatus {
-    return to_candid_variant_n23(_uploadFile, _downloadFile, value);
+function to_candid_DoseStatus_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): _DoseStatus {
+    return to_candid_variant_n24(_uploadFile, _downloadFile, value);
 }
 function to_candid_Frequency_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Frequency): _Frequency {
     return to_candid_variant_n6(_uploadFile, _downloadFile, value);
@@ -667,7 +841,7 @@ function to_candid_MedicineReminder_n3(_uploadFile: (file: ExternalBlob) => Prom
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     status: DoseStatus;
     snoozeMinutes?: bigint;
     reminderId: string;
@@ -679,7 +853,7 @@ function to_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     timestamp: bigint;
 } {
     return {
-        status: to_candid_DoseStatus_n22(_uploadFile, _downloadFile, value.status),
+        status: to_candid_DoseStatus_n23(_uploadFile, _downloadFile, value.status),
         snoozeMinutes: value.snoozeMinutes ? candid_some(value.snoozeMinutes) : candid_none(),
         reminderId: value.reminderId,
         timestamp: value.timestamp
@@ -730,7 +904,7 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         guest: null
     } : value;
 }
-function to_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): {
+function to_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): {
     taken: null;
 } | {
     missed: null;
