@@ -26,6 +26,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import ReportChapter4 from "./ReportChapter4";
+import ScreenshotsPage from "./ScreenshotsPage";
 import ProfileTab from "./components/ProfileTab";
 import { useAuth } from "./hooks/useAuth";
 import { useProfile, useUpdateProfile } from "./hooks/useProfile";
@@ -715,6 +716,9 @@ function AppInner() {
 export default function App() {
   if (window.location.pathname === "/report") {
     return <ReportChapter4 />;
+  }
+  if (window.location.pathname === "/screenshots") {
+    return <ScreenshotsPage />;
   }
   return <AppInner />;
 }
