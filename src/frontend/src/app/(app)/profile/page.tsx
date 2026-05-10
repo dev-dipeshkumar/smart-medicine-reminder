@@ -29,10 +29,10 @@ import {
   useCheckupReports,
   useDeleteCheckupReport,
   useDeleteDoctorGuidance,
-  useDoctorGuidances,
+  useDoctorGuidance as useDoctorGuidances,
   useUpdateCheckupReport,
   useUpdateDoctorGuidance,
-} from "@/hooks/useMedicalData";
+} from "@/hooks/useMedicalRecords";
 import {
   useProfile,
   useUpdateProfile,

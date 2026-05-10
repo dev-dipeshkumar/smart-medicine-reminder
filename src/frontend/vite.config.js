@@ -1,7 +1,46 @@
 import { fileURLToPath, URL } from "url";
+import { writeFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import environment from "vite-plugin-environment";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Resolve the correct ICP host for production builds.
+// On Vercel (and any non-local build), use the ICP mainnet API.
+// The Caffeine ICP pipeline injects the real backend_canister_id at build
+// time via $BACKEND_CANISTER_ID; on Vercel that env var must be set in the
+// project settings.
+const backendHost =
+  process.env.BACKEND_HOST ??
+  (process.env.DFX_NETWORK === "local"
+    ? "http://localhost:8081"
+    : "https://icp-api.io");
+
+const backendCanisterId =
+  process.env.CANISTER_ID_BACKEND ??
+  process.env.BACKEND_CANISTER_ID ??
+  "undefined";
+
+// Write env.json before the Vite build starts so loadConfig() can find it.
+// This covers both the Vercel build path and local `pnpm build` invocations
+// that don't go through the Caffeine canister.yaml pipeline.
+const envJsonPath = resolve(__dirname, "env.json");
+try {
+  const envPayload = {
+    backend_host: backendHost,
+    backend_canister_id: backendCanisterId,
+    project_id: process.env.PROJECT_ID ?? "undefined",
+    ii_derivation_origin: process.env.II_DERIVATION_ORIGIN ?? "undefined",
+    storage_gateway_url:
+      process.env.STORAGE_GATEWAY_URL ?? "https://blob.caffeine.ai",
+  };
+  writeFileSync(envJsonPath, JSON.stringify(envPayload, null, 2) + "\n");
+  console.log("[vite] env.json generated:", envPayload);
+} catch (err) {
+  console.warn("[vite] Could not write env.json (may be read-only in ICP pipeline — OK):", err.message);
+}
 
 const ii_url =
   process.env.DFX_NETWORK === "local"

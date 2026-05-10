@@ -16,6 +16,8 @@ type AuthMethod = "password" | "ii" | null;
 export type AuthState = {
   isAuthenticated: boolean;
   isInitializing: boolean;
+  /** True while the session is being restored from sessionStorage on mount. Use this to delay actor creation until auth is settled. */
+  isRestoring: boolean;
   username: string | null;
   method: AuthMethod;
   passwordIdentity: Identity | null;
@@ -173,6 +175,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const ii = useInternetIdentity();
   const [session, setSession] = useState<Session | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  // isRestoring: true while the initial sessionStorage read is in progress.
+  // useActor MUST NOT create an actor until this is false — otherwise it gets
+  // an anonymous identity on cold-start and caches it forever.
+  const [isRestoring, setIsRestoring] = useState(true);
   const [passwordIdentity, setPasswordIdentity] = useState<Identity | null>(
     null,
   );
@@ -186,6 +192,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (identity) setPasswordIdentity(identity);
       }
     }
+    // Mark restoration complete regardless of whether a session was found.
+    // This unblocks useActor so it can create the actor with the correct identity.
+    setIsRestoring(false);
     setIsInitializing(false);
   }, []);
 
@@ -271,6 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       isAuthenticated: !!session,
       isInitializing: isInitializing || ii.isInitializing,
+      isRestoring,
       username: session?.username ?? null,
       method: session?.method ?? null,
       passwordIdentity,
@@ -283,6 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       session,
       isInitializing,
+      isRestoring,
       ii,
       passwordIdentity,
       loginWithPassword,

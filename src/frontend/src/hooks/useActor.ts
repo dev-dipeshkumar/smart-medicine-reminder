@@ -12,7 +12,7 @@ const ACTOR_QUERY_KEY = "actor";
 
 export function useActor() {
   const { identity: iiIdentity } = useInternetIdentity();
-  const { passwordIdentity } = useAuth();
+  const { passwordIdentity, isRestoring } = useAuth();
   const queryClient = useQueryClient();
 
   // Use II identity if available, else fall back to password-derived identity
@@ -22,7 +22,9 @@ export function useActor() {
     : "anonymous";
 
   const actorQuery = useQuery({
-    queryKey: [ACTOR_QUERY_KEY, identityKey],
+    // Include isRestoring + identityKey so the query re-runs once restoration
+    // completes and whenever the identity changes (login / logout).
+    queryKey: [ACTOR_QUERY_KEY, isRestoring ? "restoring" : identityKey],
     queryFn: async () => {
       const actorOptions = effectiveIdentity
         ? { agentOptions: { identity: effectiveIdentity } }
@@ -33,7 +35,6 @@ export function useActor() {
         actor !== null &&
         "_initializeAccessControl" in actor
       ) {
-        // Only call access control init if authenticated
         if (effectiveIdentity) {
           try {
             await (
@@ -46,8 +47,15 @@ export function useActor() {
       }
       return actor;
     },
-    staleTime: Number.POSITIVE_INFINITY,
-    enabled: true,
+    // Never cache the actor across identity changes — always refetch for a new key.
+    staleTime: 0,
+    // Discard the cached result immediately so a stale anonymous actor is
+    // never returned after the user logs in or the page is restored.
+    gcTime: 0,
+    // Do NOT create the actor until session restoration is complete AND we
+    // have a real identity. This prevents the cold-start anonymous-actor bug
+    // on Vercel where sessionStorage hasn't been read yet.
+    enabled: !isRestoring && !!effectiveIdentity,
   });
 
   useEffect(() => {
