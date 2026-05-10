@@ -21,6 +21,7 @@ const backendHost =
 const backendCanisterId =
   process.env.CANISTER_ID_BACKEND ??
   process.env.BACKEND_CANISTER_ID ??
+  process.env.VITE_BACKEND_CANISTER_ID ??
   "undefined";
 
 // Write env.json before the Vite build starts so loadConfig() can find it.
@@ -54,6 +55,14 @@ process.env.STORAGE_GATEWAY_URL =
 export default defineConfig({
   logLevel: "error",
   base: "/",
+  // Bake VITE_BACKEND_CANISTER_ID into the bundle at build time.
+  // On Vercel: set CANISTER_ID_BACKEND (or VITE_BACKEND_CANISTER_ID) in your
+  // project environment variables. The value is your ICP canister ID
+  // (format: xxxxx-xxxxx-xxxxx-xxxxx-cai) from your Caffeine deployment page.
+  define: {
+    "import.meta.env.VITE_BACKEND_CANISTER_ID": JSON.stringify(backendCanisterId),
+    "import.meta.env.VITE_BACKEND_HOST": JSON.stringify(backendHost),
+  },
   build: {
     emptyOutDir: true,
     sourcemap: false,

@@ -1,8 +1,12 @@
 // Custom useActor that injects passwordIdentity when II identity is not available.
-// CRITICAL FIX: useActor from core-infrastructure only reads II identity.
-// Password-based users must have their identity injected here.
-import { createActorWithConfig } from "@caffeineai/core-infrastructure";
-import { useInternetIdentity } from "@caffeineai/core-infrastructure";
+// CRITICAL FIX: Before calling createActorWithConfig, we resolve the canister ID
+// via getCanisterConfig() which reads import.meta.env.VITE_BACKEND_CANISTER_ID
+// (baked in at Vite build time) as the primary source. This ensures Vercel builds
+// always have the correct canister ID even when env.json still has 'undefined'.
+import {
+  createActorWithConfig,
+  useInternetIdentity,
+} from "@caffeineai/core-infrastructure";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { createActor } from "../backend";
@@ -26,10 +30,43 @@ export function useActor() {
     // completes and whenever the identity changes (login / logout).
     queryKey: [ACTOR_QUERY_KEY, isRestoring ? "restoring" : identityKey],
     queryFn: async () => {
+      // Before calling createActorWithConfig, ensure the config cache is
+      // primed with the canister ID we baked in at Vite build time.
+      // This prevents loadConfig() from throwing on Vercel when env.json
+      // still contains 'undefined' but import.meta.env.VITE_BACKEND_CANISTER_ID
+      // was injected correctly at build time.
+      const { getCanisterConfig } = await import("../config");
+      let canisterId: string;
+      try {
+        const cfg = await getCanisterConfig();
+        canisterId = cfg.canisterId;
+      } catch (err) {
+        console.error(
+          "[useActor] Cannot create actor — canister ID not resolved.",
+          "Set CANISTER_ID_BACKEND in your Vercel environment variables.",
+          "See VERCEL_SETUP.md for instructions.",
+          err,
+        );
+        throw err;
+      }
+
+      // Patch process.env so loadConfig() inside createActorWithConfig
+      // finds the canister ID even when env.json has 'undefined'.
+      // biome-ignore lint/suspicious/noExplicitAny: patching browser process shim
+      const env = (
+        typeof process !== "undefined"
+          ? process.env
+          : (window as any).process?.env
+      ) as Record<string, string>;
+      if (env && !env.CANISTER_ID_BACKEND) {
+        env.CANISTER_ID_BACKEND = canisterId;
+      }
+
       const actorOptions = effectiveIdentity
         ? { agentOptions: { identity: effectiveIdentity } }
         : {};
       const actor = await createActorWithConfig(createActor, actorOptions);
+
       if (
         typeof actor === "object" &&
         actor !== null &&

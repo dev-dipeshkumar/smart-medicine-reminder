@@ -12,6 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const backendCanisterId =
   process.env.CANISTER_ID_BACKEND ??
   process.env.NEXT_PUBLIC_BACKEND_CANISTER_ID ??
+  process.env.VITE_BACKEND_CANISTER_ID ??
   "undefined";
 
 const backendHost =
