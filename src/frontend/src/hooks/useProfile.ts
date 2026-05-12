@@ -29,10 +29,28 @@ export function useUpdateProfile() {
       if (!actor) throw new Error("Not authenticated");
       await actor.updateProfile(profile);
     },
+    onMutate: async (newProfile: UserProfile) => {
+      // Cancel any in-flight refetches so they don't stomp our optimistic value
+      await qc.cancelQueries({ queryKey: ["profile"] });
+      // Snapshot previous value for rollback
+      const previous = qc.getQueryData<UserProfile | null>(["profile"]);
+      // Apply optimistic update immediately — UI feels instant
+      qc.setQueryData(["profile"], newProfile);
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      // Roll back on network failure
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["profile"], context.previous);
+      }
+      toast.error("Failed to update profile");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["profile"] });
       toast.success("Profile updated");
     },
-    onError: () => toast.error("Failed to update profile"),
+    onSettled: () => {
+      // Sync with server in background to confirm
+      qc.invalidateQueries({ queryKey: ["profile"] });
+    },
   });
 }

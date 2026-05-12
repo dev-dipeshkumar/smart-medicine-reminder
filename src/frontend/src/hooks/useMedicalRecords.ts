@@ -34,11 +34,27 @@ export function useAddDoctorGuidance() {
       if (!actor) throw new Error("Not connected");
       await actor.addDoctorGuidance(guidance);
     },
+    onMutate: async (newItem: DoctorGuidance) => {
+      await qc.cancelQueries({ queryKey: ["doctorGuidance"] });
+      const previous = qc.getQueryData<DoctorGuidance[]>(["doctorGuidance"]);
+      qc.setQueryData(["doctorGuidance"], (old: DoctorGuidance[] = []) => [
+        ...old,
+        newItem,
+      ]);
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["doctorGuidance"], context.previous);
+      }
+      toast.error("Failed to add doctor guidance");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
       toast.success("Doctor guidance added");
     },
-    onError: () => toast.error("Failed to add doctor guidance"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
+    },
   });
 }
 
@@ -50,11 +66,26 @@ export function useUpdateDoctorGuidance() {
       if (!actor) throw new Error("Not connected");
       await actor.updateDoctorGuidance(guidance);
     },
+    onMutate: async (updated: DoctorGuidance) => {
+      await qc.cancelQueries({ queryKey: ["doctorGuidance"] });
+      const previous = qc.getQueryData<DoctorGuidance[]>(["doctorGuidance"]);
+      qc.setQueryData(["doctorGuidance"], (old: DoctorGuidance[] = []) =>
+        old.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["doctorGuidance"], context.previous);
+      }
+      toast.error("Failed to update doctor guidance");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
       toast.success("Doctor guidance updated");
     },
-    onError: () => toast.error("Failed to update doctor guidance"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
+    },
   });
 }
 
@@ -66,11 +97,26 @@ export function useDeleteDoctorGuidance() {
       if (!actor) throw new Error("Not connected");
       await actor.deleteDoctorGuidance(id);
     },
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["doctorGuidance"] });
+      const previous = qc.getQueryData<DoctorGuidance[]>(["doctorGuidance"]);
+      qc.setQueryData(["doctorGuidance"], (old: DoctorGuidance[] = []) =>
+        old.filter((item) => item.id !== id),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["doctorGuidance"], context.previous);
+      }
+      toast.error("Failed to delete doctor guidance");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
       toast.success("Doctor guidance deleted");
     },
-    onError: () => toast.error("Failed to delete doctor guidance"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["doctorGuidance"] });
+    },
   });
 }
 
@@ -98,11 +144,27 @@ export function useAddCheckupReport() {
       if (!actor) throw new Error("Not connected");
       await actor.addCheckupReport(report);
     },
+    onMutate: async (newItem: CheckupReport) => {
+      await qc.cancelQueries({ queryKey: ["checkupReports"] });
+      const previous = qc.getQueryData<CheckupReport[]>(["checkupReports"]);
+      qc.setQueryData(["checkupReports"], (old: CheckupReport[] = []) => [
+        ...old,
+        newItem,
+      ]);
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["checkupReports"], context.previous);
+      }
+      toast.error("Failed to add checkup report");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["checkupReports"] });
       toast.success("Checkup report added");
     },
-    onError: () => toast.error("Failed to add checkup report"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["checkupReports"] });
+    },
   });
 }
 
@@ -114,11 +176,26 @@ export function useUpdateCheckupReport() {
       if (!actor) throw new Error("Not connected");
       await actor.updateCheckupReport(report);
     },
+    onMutate: async (updated: CheckupReport) => {
+      await qc.cancelQueries({ queryKey: ["checkupReports"] });
+      const previous = qc.getQueryData<CheckupReport[]>(["checkupReports"]);
+      qc.setQueryData(["checkupReports"], (old: CheckupReport[] = []) =>
+        old.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["checkupReports"], context.previous);
+      }
+      toast.error("Failed to update checkup report");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["checkupReports"] });
       toast.success("Checkup report updated");
     },
-    onError: () => toast.error("Failed to update checkup report"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["checkupReports"] });
+    },
   });
 }
 
@@ -130,10 +207,25 @@ export function useDeleteCheckupReport() {
       if (!actor) throw new Error("Not connected");
       await actor.deleteCheckupReport(id);
     },
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ["checkupReports"] });
+      const previous = qc.getQueryData<CheckupReport[]>(["checkupReports"]);
+      qc.setQueryData(["checkupReports"], (old: CheckupReport[] = []) =>
+        old.filter((item) => item.id !== id),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(["checkupReports"], context.previous);
+      }
+      toast.error("Failed to delete checkup report");
+    },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["checkupReports"] });
       toast.success("Checkup report deleted");
     },
-    onError: () => toast.error("Failed to delete checkup report"),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["checkupReports"] });
+    },
   });
 }

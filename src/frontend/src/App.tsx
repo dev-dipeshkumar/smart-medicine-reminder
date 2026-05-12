@@ -26,8 +26,10 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import ReportChapter4 from "./ReportChapter4";
+import { HealthParticleBackground } from "./components/HealthParticleBackground";
 import ProfileTab from "./components/ProfileTab";
 import { useAuth } from "./hooks/useAuth";
+import { useAddDoctorGuidance } from "./hooks/useMedicalRecords";
 import { useProfile, useUpdateProfile } from "./hooks/useProfile";
 import { useReminderNotifications } from "./hooks/useReminderNotifications";
 import { useReminders } from "./hooks/useReminders";
@@ -52,13 +54,14 @@ function AuthScreen() {
   const [age, setAge] = useState("");
   const [gender, setGender] = useState("");
   const [locality, setLocality] = useState("");
+  const [doctorName, setDoctorName] = useState("");
+  const [treatmentPlan, setTreatmentPlan] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Password visibility toggles
   const [showSignInPwd, setShowSignInPwd] = useState(false);
   const [showRegPwd, setShowRegPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
@@ -66,9 +69,19 @@ function AuthScreen() {
   const handleSignIn = async () => {
     setError(null);
     setIsLoading(true);
+    // Set welcome flags BEFORE awaiting — so they are in sessionStorage
+    // the instant the auth state change causes AppInner to mount.
+    const displayName = username.trim() || "Friend";
+    if (!sessionStorage.getItem("welcome_shown")) {
+      sessionStorage.setItem("welcome_name_hint", displayName);
+      sessionStorage.setItem("welcome_pending", "1");
+    }
     const result = await loginWithPassword(username, password);
     setIsLoading(false);
     if (result.error) {
+      // Login failed — clear the flags we speculatively set
+      sessionStorage.removeItem("welcome_pending");
+      sessionStorage.removeItem("welcome_name_hint");
       if (result.error === "Username not found") {
         setError(
           "No account found with that username. Create one in the 'Create Account' tab.",
@@ -115,6 +128,16 @@ function AuthScreen() {
       if (gender.trim()) sessionStorage.setItem("reg_gender", gender.trim());
       if (locality.trim())
         sessionStorage.setItem("reg_locality", locality.trim());
+      if (doctorName.trim())
+        sessionStorage.setItem("reg_doctorName", doctorName.trim());
+      if (treatmentPlan.trim())
+        sessionStorage.setItem("reg_treatmentPlan", treatmentPlan.trim());
+      // Flag welcome — set BEFORE auth state change so AppInner reads it on first mount
+      if (!sessionStorage.getItem("welcome_shown")) {
+        const displayName = fullName.trim() || username.trim() || "Friend";
+        sessionStorage.setItem("welcome_name_hint", displayName);
+        sessionStorage.setItem("welcome_pending", "1");
+      }
     }
   };
 
@@ -126,13 +149,16 @@ function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Advanced 3D health particle background — purely decorative */}
+      <HealthParticleBackground />
+
       <Toaster />
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm relative z-10"
       >
         {/* Logo */}
         <div className="text-center mb-8">
@@ -161,6 +187,8 @@ function AuthScreen() {
               setAge("");
               setGender("");
               setLocality("");
+              setDoctorName("");
+              setTreatmentPlan("");
             }}
           >
             <TabsList className="w-full mb-5">
@@ -363,6 +391,45 @@ function AuthScreen() {
                   onKeyDown={handleKeyDown}
                 />
               </div>
+              {/* Doctor Guidance fields — pre-fill Doctor Guidance section */}
+              <div className="space-y-2">
+                <Label htmlFor="reg-doctorname">
+                  Doctor Name{" "}
+                  <span className="text-muted-foreground text-xs">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
+                  id="reg-doctorname"
+                  data-ocid="auth.register.doctorname.input"
+                  placeholder="Your doctor name (optional)"
+                  value={doctorName}
+                  onChange={(e) => {
+                    setDoctorName(e.target.value);
+                    setError(null);
+                  }}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-treatment">
+                  Treatment Plan{" "}
+                  <span className="text-muted-foreground text-xs">
+                    (optional)
+                  </span>
+                </Label>
+                <Input
+                  id="reg-treatment"
+                  data-ocid="auth.register.treatment.input"
+                  placeholder="Prescribed treatment (optional)"
+                  value={treatmentPlan}
+                  onChange={(e) => {
+                    setTreatmentPlan(e.target.value);
+                    setError(null);
+                  }}
+                  onKeyDown={handleKeyDown}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="reg-username">Username</Label>
                 <Input
@@ -510,6 +577,66 @@ function AuthScreen() {
   );
 }
 
+function WelcomeScreen({
+  name,
+  onDismiss,
+}: { name: string; onDismiss: () => void }) {
+  // Defer particle canvas until after the welcome card has painted.
+  // This prevents the canvas repaint cycle from blocking the initial render
+  // on mobile/low-end devices, so the card appears in < 100ms.
+  const [showParticles, setShowParticles] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      // One more frame to ensure the card is painted before starting canvas
+      requestAnimationFrame(() => setShowParticles(true));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <motion.div
+      key="welcome-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.97, y: -10 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden"
+      data-ocid="welcome.screen"
+    >
+      {/* Deferred particle background — only starts after card is visible */}
+      {showParticles && <HealthParticleBackground />}
+      <motion.div
+        initial={{ scale: 0.85, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.93, opacity: 0, y: -8 }}
+        transition={{ duration: 0.5, delay: 0.1, type: "spring", bounce: 0.3 }}
+        className="flex flex-col items-center gap-6 text-center px-8 max-w-sm relative z-10"
+      >
+        <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center shadow-lg">
+          <Pill className="w-12 h-12 text-primary" />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold text-foreground leading-tight">
+            Welcome to MediRemind,{" "}
+            <span className="text-primary">{name || "Friend"}</span>!
+          </h1>
+          <p className="text-muted-foreground text-base">
+            Your health journey starts here.
+          </p>
+        </div>
+        <Button
+          data-ocid="welcome.get_started.primary_button"
+          size="lg"
+          className="w-full mt-2"
+          onClick={onDismiss}
+        >
+          Get Started
+        </Button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function HeaderAvatar({
   photoUrl,
   username,
@@ -540,7 +667,19 @@ function HeaderAvatar({
 }
 
 function AppInner() {
-  const { isAuthenticated, isInitializing, username, logout } = useAuth();
+  const {
+    isAuthenticated,
+    isInitializing,
+    username,
+    logout: _logout,
+  } = useAuth();
+  // Wrap logout to clear welcome flags so the screen shows again on next login
+  const logout = () => {
+    sessionStorage.removeItem("welcome_shown");
+    sessionStorage.removeItem("welcome_pending");
+    sessionStorage.removeItem("welcome_name_hint");
+    _logout();
+  };
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -549,11 +688,40 @@ function AppInner() {
       return false;
     }
   });
+  // Initialise immediately from the pending flag so the welcome screen
+  // appears as soon as the authenticated view mounts — no backend round-trip needed.
+  const [showWelcome, setShowWelcome] = useState(() => {
+    const pending = sessionStorage.getItem("welcome_pending");
+    if (pending && !sessionStorage.getItem("welcome_shown")) {
+      sessionStorage.setItem("welcome_shown", "1");
+      sessionStorage.removeItem("welcome_pending");
+      return true;
+    }
+    return false;
+  });
+  const [welcomeName, setWelcomeName] = useState(() => {
+    // Captured synchronously so the name is available even before profile loads
+    return sessionStorage.getItem("welcome_name_hint") ?? "";
+  });
+
+  // Fallback useEffect: catches the race where AppInner mounts a few ms
+  // before handleSignIn sets welcome_pending (async await boundary).
+  useEffect(() => {
+    const pending = sessionStorage.getItem("welcome_pending");
+    if (pending && !sessionStorage.getItem("welcome_shown")) {
+      const hint = sessionStorage.getItem("welcome_name_hint") ?? "";
+      sessionStorage.setItem("welcome_shown", "1");
+      sessionStorage.removeItem("welcome_pending");
+      setWelcomeName(hint);
+      setShowWelcome(true);
+    }
+  }, []);
 
   const { data: reminders } = useReminders();
   const { notifPermission } = useReminderNotifications(reminders);
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
+  const addDoctorGuidance = useAddDoctorGuidance();
 
   useEffect(() => {
     if (darkMode) {
@@ -568,30 +736,76 @@ function AppInner() {
     }
   }, [darkMode]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: updateProfile ref changes every render
+  // Seed registration profile data into the ICP backend once the actor is ready.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: updateProfile.mutate and addDoctorGuidance.mutate refs are stable per React Query contract
   useEffect(() => {
-    if (!isAuthenticated || updateProfile.isPending) return;
+    if (profile === undefined) return;
+    if (profile?.name) return;
+    if (updateProfile.isPending) return;
+
     const pendingName = sessionStorage.getItem("reg_fullname");
     const pendingAge = sessionStorage.getItem("reg_age");
     const pendingGender = sessionStorage.getItem("reg_gender");
     const pendingLocality = sessionStorage.getItem("reg_locality");
+    const pendingDoctorName = sessionStorage.getItem("reg_doctorName");
+    const pendingTreatment = sessionStorage.getItem("reg_treatmentPlan");
     const hasPending =
       pendingName || pendingAge || pendingGender || pendingLocality;
     if (!hasPending) return;
+
+    // Clear the pending seed keys immediately to prevent duplicate calls
     sessionStorage.removeItem("reg_fullname");
     sessionStorage.removeItem("reg_email");
     sessionStorage.removeItem("reg_age");
     sessionStorage.removeItem("reg_gender");
     sessionStorage.removeItem("reg_locality");
-    updateProfile.mutate({
-      name: pendingName?.trim() ?? "",
-      age: pendingAge ? BigInt(Math.floor(Number(pendingAge))) : 0n,
-      gender: pendingGender ?? "",
-      locality: pendingLocality?.trim() ?? "",
-      photoUrl: "",
-      lastUpdated: BigInt(Date.now()) * 1_000_000n,
-    });
-  }, [isAuthenticated]);
+    sessionStorage.removeItem("reg_doctorName");
+    sessionStorage.removeItem("reg_treatmentPlan");
+
+    // Update the displayed name once profile data arrives (welcome may already be showing)
+    if (pendingName) {
+      setWelcomeName(pendingName.trim());
+    }
+
+    updateProfile.mutate(
+      {
+        name: pendingName?.trim() ?? "",
+        age: pendingAge ? BigInt(Math.floor(Number(pendingAge))) : 0n,
+        gender: pendingGender ?? "",
+        locality: pendingLocality?.trim() ?? "",
+        photoUrl: "",
+        lastUpdated: BigInt(Date.now()) * 1_000_000n,
+      },
+      {
+        onSuccess: () => {
+          // Seed Doctor Guidance if provided during registration
+          if (pendingDoctorName || pendingTreatment) {
+            const today = new Date().toISOString().split("T")[0];
+            addDoctorGuidance.mutate({
+              id: `reg-${Date.now()}`,
+              doctorName: pendingDoctorName ?? "",
+              treatment: pendingTreatment ?? "",
+              notes: "Added during registration",
+              date: today,
+            });
+          }
+        },
+        onError: () => {
+          // Restore the pending seed so it retries on the next render cycle
+          if (pendingName) sessionStorage.setItem("reg_fullname", pendingName);
+          if (pendingAge) sessionStorage.setItem("reg_age", pendingAge);
+          if (pendingGender)
+            sessionStorage.setItem("reg_gender", pendingGender);
+          if (pendingLocality)
+            sessionStorage.setItem("reg_locality", pendingLocality);
+          if (pendingDoctorName)
+            sessionStorage.setItem("reg_doctorName", pendingDoctorName);
+          if (pendingTreatment)
+            sessionStorage.setItem("reg_treatmentPlan", pendingTreatment);
+        },
+      },
+    );
+  }, [profile, updateProfile.isPending]);
 
   if (isInitializing) {
     return (
@@ -607,6 +821,11 @@ function AppInner() {
   if (!isAuthenticated) {
     return <AuthScreen />;
   }
+
+  // Prefer the name hint captured at login time for the welcome screen so it
+  // shows a real name before the backend profile fetch completes.
+  const displayName =
+    welcomeName || profile?.name?.trim() || username || "Friend";
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     {
@@ -631,6 +850,20 @@ function AppInner() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Toaster />
+
+      {/* Welcome overlay — shown immediately after login, user-dismissed */}
+      <AnimatePresence>
+        {showWelcome && (
+          <WelcomeScreen
+            name={displayName}
+            onDismiss={() => {
+              setShowWelcome(false);
+              setWelcomeName("");
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <header className="sticky top-0 z-40 bg-card/90 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Pill className="w-6 h-6 text-primary" />

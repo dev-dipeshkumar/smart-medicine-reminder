@@ -118,7 +118,7 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!validate()) return;
     const profileData: UserProfile = {
       name: form.name.trim(),
@@ -128,8 +128,10 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
       photoUrl: form.photoUrl,
       lastUpdated: BigInt(Date.now()) * 1_000_000n,
     };
-    await updateProfile.mutateAsync(profileData);
+    // Close edit mode immediately — optimistic update makes this feel instant.
+    // The mutation runs in background; onError in the hook rolls back + shows toast.
     setEditing(false);
+    updateProfile.mutate(profileData);
   };
 
   const displayName = profile?.name || username || "User";
@@ -434,15 +436,16 @@ function DoctorGuidanceSection() {
     setShowForm(true);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!form.doctorName.trim()) return;
-    if (editingItem) {
-      await updateGuidance.mutateAsync({ ...editingItem, ...form });
-    } else {
-      await addGuidance.mutateAsync({ id: crypto.randomUUID(), ...form });
-    }
+    // Close form immediately — optimistic update makes the list update appear instant.
     setShowForm(false);
     setEditingItem(null);
+    if (editingItem) {
+      updateGuidance.mutate({ ...editingItem, ...form });
+    } else {
+      addGuidance.mutate({ id: crypto.randomUUID(), ...form });
+    }
   };
 
   const isPending = addGuidance.isPending || updateGuidance.isPending;
@@ -655,14 +658,15 @@ function CheckupReportsSection() {
     setShowForm(true);
   };
 
-  const handleSubmit = async () => {
-    if (editingItem) {
-      await updateReport.mutateAsync({ ...editingItem, ...form });
-    } else {
-      await addReport.mutateAsync({ id: crypto.randomUUID(), ...form });
-    }
+  const handleSubmit = () => {
+    // Close form immediately — optimistic update makes the list update appear instant.
     setShowForm(false);
     setEditingItem(null);
+    if (editingItem) {
+      updateReport.mutate({ ...editingItem, ...form });
+    } else {
+      addReport.mutate({ id: crypto.randomUUID(), ...form });
+    }
   };
 
   const isPending = addReport.isPending || updateReport.isPending;

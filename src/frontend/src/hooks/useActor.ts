@@ -52,12 +52,11 @@ export function useActor() {
 
       // Patch process.env so loadConfig() inside createActorWithConfig
       // finds the canister ID even when env.json has 'undefined'.
-      // biome-ignore lint/suspicious/noExplicitAny: patching browser process shim
       const env = (
         typeof process !== "undefined"
           ? process.env
           : (window as any).process?.env
-      ) as Record<string, string>;
+      ) as Record<string, string>; // eslint-disable-line @typescript-eslint/no-explicit-any
       if (env && !env.CANISTER_ID_BACKEND) {
         env.CANISTER_ID_BACKEND = canisterId;
       }
