@@ -13,6 +13,8 @@ import Iter "mo:core/Iter";
 import OutCall "mo:caffeineai-http-outcalls/outcall";
 import MixinAuthorization "mo:caffeineai-authorization/MixinAuthorization";
 import AccessControl "mo:caffeineai-authorization/access-control";
+import Timer "mo:core/Timer";
+import Result "mo:core/Result";
 
 actor {
   let nanosecondsPerDay = 24 * 60 * 60 * 1_000_000_000;
@@ -95,6 +97,20 @@ actor {
   let profiles = Map.empty<Principal, UserProfile>();
   let doctorGuidances = Map.empty<Principal, Map.Map<Text, DoctorGuidance>>();
   let checkupReports = Map.empty<Principal, Map.Map<Text, CheckupReport>>();
+
+  // ---- Push Notification State ----
+
+  type PushSubscriptionRecord = {
+    endpoint : Text;
+    p256dh : Text;
+    auth : Text;
+    userAgent : Text;
+    createdAt : Int;
+  };
+
+  var vapidPublicKey : Text = "";
+  let pushSubscriptions = Map.empty<Principal, PushSubscriptionRecord>();
+  let firedKeys = Map.empty<Text, Int>();
 
   func getUserReminders(caller : Principal) : Map.Map<Text, MedicineReminder> {
     switch (reminders.get(caller)) {
@@ -652,4 +668,115 @@ actor {
 
     getUserLogs(caller).values().toArray().sort();
   };
+
+  // ---- Web Push ----
+
+  public query func getVapidPublicKey() : async Text {
+    vapidPublicKey
+  };
+
+  public shared func setVapidPublicKey(key : Text) : async () {
+    vapidPublicKey := key;
+  };
+
+  public shared(msg) func registerPushSubscription(
+    endpoint : Text,
+    p256dh : Text,
+    auth : Text,
+    userAgent : Text
+  ) : async { #ok; #err : Text } {
+    let caller = msg.caller;
+    if (caller.isAnonymous()) {
+      return #err("Must be logged in to register push subscription");
+    };
+    let record : PushSubscriptionRecord = {
+      endpoint;
+      p256dh;
+      auth;
+      userAgent;
+      createdAt = Time.now();
+    };
+    pushSubscriptions.add(caller, record);
+    #ok(())
+  };
+
+  public shared(msg) func unregisterPushSubscription() : async { #ok; #err : Text } {
+    pushSubscriptions.remove(msg.caller);
+    #ok(())
+  };
+
+  public query(msg) func getPushSubscription() : async ?PushSubscriptionRecord {
+    pushSubscriptions.get(msg.caller)
+  };
+
+  public query(msg) func hasPushSubscription() : async Bool {
+    switch (pushSubscriptions.get(msg.caller)) {
+      case (?_) true;
+      case null false;
+    }
+  };
+
+  func sendPushNotification(endpoint : Text, title : Text, body : Text) : async () {
+    let payload = "{\"notification\":{\"title\":\"" # title # "\",\"body\":\"" # body # "\",\"icon\":\"/icons/icon-192.png\",\"badge\":\"/icons/icon-192.png\"}}";
+    try {
+      let _ = await OutCall.httpPostRequest(
+        endpoint,
+        [{name = "Content-Type"; value = "application/json"}, {name = "TTL"; value = "86400"}],
+        payload,
+        transform
+      );
+    } catch (_e) {
+      // Silent failure - don't crash on push errors
+    };
+  };
+
+  func checkDueReminders() : async () {
+    try {
+      let nowNs = Time.now();
+      let nowSecs = nowNs / 1_000_000_000;
+      let secsInDay = nowSecs % 86400;
+      let hours = secsInDay / 3600;
+      let mins = (secsInDay % 3600) / 60;
+      let hourStr = if (hours < 10) "0" # hours.toText() else hours.toText();
+      let minStr = if (mins < 10) "0" # mins.toText() else mins.toText();
+      let timeStr = hourStr # ":" # minStr;
+      let dayNum = (nowSecs / 86400).toText();
+
+      for ((principal, subscription) in pushSubscriptions.entries()) {
+        let userPrincipalText = principal.toText();
+        switch (reminders.get(principal)) {
+          case (?userReminders) {
+            for (reminder in userReminders.values()) {
+              if (reminder.isActive) {
+                var shouldFire = false;
+                for (t in reminder.times.vals()) {
+                  if (t == timeStr) { shouldFire := true };
+                };
+                if (shouldFire) {
+                  let firedKey = userPrincipalText # "_" # reminder.id # "_" # dayNum;
+                  switch (firedKeys.get(firedKey)) {
+                    case (?_) {}; // already fired
+                    case null {
+                      firedKeys.add(firedKey, nowNs);
+                      ignore sendPushNotification(
+                        subscription.endpoint,
+                        "MediRemind Reminder",
+                        "Time to take " # reminder.name # " - " # reminder.dosage
+                      );
+                    };
+                  };
+                };
+              };
+            };
+          };
+          case null {};
+        };
+      };
+      // TODO: cleanup old firedKeys entries
+    } catch (_e) {
+      // Silent failure - don't crash the timer
+    };
+  };
+
+  ignore Timer.recurringTimer<system>(#seconds 60, checkDueReminders);
 };

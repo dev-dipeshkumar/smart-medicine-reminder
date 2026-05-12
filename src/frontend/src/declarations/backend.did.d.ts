@@ -53,6 +53,13 @@ export interface MedicineReminder {
   'notes' : string,
   'frequency' : Frequency,
 }
+export interface PushSubscriptionRecord {
+  'endpoint' : string,
+  'auth' : string,
+  'createdAt' : bigint,
+  'p256dh' : string,
+  'userAgent' : string,
+}
 export interface ReminderDayStats {
   'missedDoses' : bigint,
   'reminderId' : string,
@@ -116,6 +123,7 @@ export interface _SERVICE {
   'getMedicineInfo' : ActorMethod<[string], string>,
   'getPastNDayStats' : ActorMethod<[bigint], Array<[bigint, DayStats]>>,
   'getProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getPushSubscription' : ActorMethod<[], [] | [PushSubscriptionRecord]>,
   'getReminder' : ActorMethod<[string], MedicineReminder>,
   'getReminderDayLogs' : ActorMethod<[string, bigint], Array<DoseLog>>,
   'getReminderDayLogsRange' : ActorMethod<
@@ -127,9 +135,22 @@ export interface _SERVICE {
     [string, bigint, bigint],
     ReminderDayStats
   >,
+  'getVapidPublicKey' : ActorMethod<[], string>,
+  'hasPushSubscription' : ActorMethod<[], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'logDose' : ActorMethod<[DoseLog], undefined>,
+  'registerPushSubscription' : ActorMethod<
+    [string, string, string, string],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
+  'setVapidPublicKey' : ActorMethod<[string], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
+  'unregisterPushSubscription' : ActorMethod<
+    [],
+    { 'ok' : null } |
+      { 'err' : string }
+  >,
   'updateCheckupReport' : ActorMethod<[CheckupReport], undefined>,
   'updateDoctorGuidance' : ActorMethod<[DoctorGuidance], undefined>,
   'updateProfile' : ActorMethod<[UserProfile], undefined>,

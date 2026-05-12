@@ -36,6 +36,14 @@ type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
 type Node__46230540<K, V> =
   {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type PushSubscriptionRecord__657402860 =
+  {
+    auth : Text;
+    createdAt : Int;
+    endpoint : Text;
+    p256dh : Text;
+    userAgent : Text
+  };
 type UserProfile__491224006 =
   {
     age : Nat;
@@ -66,6 +74,8 @@ actor {
                         Map__605269027<Text, DoctorGuidance__410500739>>;
       var size : Nat__490723111
     };
+  stable firedKeys :
+    {var root : Node__46230540<Text, Int>; var size : Nat__490723111};
   stable logs :
     {
       var root :
@@ -78,11 +88,17 @@ actor {
       var root : Node__46230540<Principal, UserProfile__491224006>;
       var size : Nat__490723111
     };
+  stable pushSubscriptions :
+    {
+      var root : Node__46230540<Principal, PushSubscriptionRecord__657402860>;
+      var size : Nat__490723111
+    };
   stable reminders :
     {
       var root :
         Node__46230540<Principal,
                         Map__605269027<Text, MedicineReminder__332719570>>;
       var size : Nat__490723111
-    }
+    };
+  stable var vapidPublicKey : Text
 };

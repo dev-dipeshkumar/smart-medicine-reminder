@@ -77,6 +77,13 @@ export const UserProfile = IDL.Record({
   'gender' : IDL.Text,
   'locality' : IDL.Text,
 });
+export const PushSubscriptionRecord = IDL.Record({
+  'endpoint' : IDL.Text,
+  'auth' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'p256dh' : IDL.Text,
+  'userAgent' : IDL.Text,
+});
 export const http_header = IDL.Record({
   'value' : IDL.Text,
   'name' : IDL.Text,
@@ -137,6 +144,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getPushSubscription' : IDL.Func(
+      [],
+      [IDL.Opt(PushSubscriptionRecord)],
+      ['query'],
+    ),
   'getReminder' : IDL.Func([IDL.Text], [MedicineReminder], ['query']),
   'getReminderDayLogs' : IDL.Func(
       [IDL.Text, IDL.Int],
@@ -158,12 +170,25 @@ export const idlService = IDL.Service({
       [ReminderDayStats],
       ['query'],
     ),
+  'getVapidPublicKey' : IDL.Func([], [IDL.Text], ['query']),
+  'hasPushSubscription' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'logDose' : IDL.Func([DoseLog], [], []),
+  'registerPushSubscription' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
+    ),
+  'setVapidPublicKey' : IDL.Func([IDL.Text], [], []),
   'transform' : IDL.Func(
       [TransformationInput],
       [TransformationOutput],
       ['query'],
+    ),
+  'unregisterPushSubscription' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+      [],
     ),
   'updateCheckupReport' : IDL.Func([CheckupReport], [], []),
   'updateDoctorGuidance' : IDL.Func([DoctorGuidance], [], []),
@@ -243,6 +268,13 @@ export const idlFactory = ({ IDL }) => {
     'gender' : IDL.Text,
     'locality' : IDL.Text,
   });
+  const PushSubscriptionRecord = IDL.Record({
+    'endpoint' : IDL.Text,
+    'auth' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'p256dh' : IDL.Text,
+    'userAgent' : IDL.Text,
+  });
   const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
   const http_request_result = IDL.Record({
     'status' : IDL.Nat,
@@ -300,6 +332,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getPushSubscription' : IDL.Func(
+        [],
+        [IDL.Opt(PushSubscriptionRecord)],
+        ['query'],
+      ),
     'getReminder' : IDL.Func([IDL.Text], [MedicineReminder], ['query']),
     'getReminderDayLogs' : IDL.Func(
         [IDL.Text, IDL.Int],
@@ -321,12 +358,25 @@ export const idlFactory = ({ IDL }) => {
         [ReminderDayStats],
         ['query'],
       ),
+    'getVapidPublicKey' : IDL.Func([], [IDL.Text], ['query']),
+    'hasPushSubscription' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'logDose' : IDL.Func([DoseLog], [], []),
+    'registerPushSubscription' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
+      ),
+    'setVapidPublicKey' : IDL.Func([IDL.Text], [], []),
     'transform' : IDL.Func(
         [TransformationInput],
         [TransformationOutput],
         ['query'],
+      ),
+    'unregisterPushSubscription' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text })],
+        [],
       ),
     'updateCheckupReport' : IDL.Func([CheckupReport], [], []),
     'updateDoctorGuidance' : IDL.Func([DoctorGuidance], [], []),

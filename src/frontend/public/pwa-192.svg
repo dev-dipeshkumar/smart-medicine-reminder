@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- Dark navy background -->
+  <rect width="192" height="192" rx="40" fill="#0f172a"/>
+  <!-- Teal-to-indigo pill shape -->
+  <defs>
+    <linearGradient id="pillGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <!-- Pill capsule: two semicircles + rectangle -->
+  <g transform="translate(96,96) rotate(-45)">
+    <!-- Left half (teal) -->
+    <rect x="-56" y="-24" width="56" height="48" rx="0" fill="#14b8a6"/>
+    <ellipse cx="-56" cy="0" rx="24" ry="24" fill="#14b8a6"/>
+    <!-- Right half (indigo) -->
+    <rect x="0" y="-24" width="56" height="48" rx="0" fill="#6366f1"/>
+    <ellipse cx="56" cy="0" rx="24" ry="24" fill="#6366f1"/>
+    <!-- Dividing line -->
+    <line x1="0" y1="-24" x2="0" y2="24" stroke="#0f172a" stroke-width="3" opacity="0.6"/>
+  </g>
+</svg>

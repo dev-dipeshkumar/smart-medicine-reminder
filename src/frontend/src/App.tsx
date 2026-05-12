@@ -24,19 +24,27 @@ import {
   UserCircle,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import React, { Suspense } from "react";
 import ReportChapter4 from "./ReportChapter4";
 import { HealthParticleBackground } from "./components/HealthParticleBackground";
-import ProfileTab from "./components/ProfileTab";
 import { useAuth } from "./hooks/useAuth";
 import { useAddDoctorGuidance } from "./hooks/useMedicalRecords";
 import { useProfile, useUpdateProfile } from "./hooks/useProfile";
 import { useReminderNotifications } from "./hooks/useReminderNotifications";
 import { useReminders } from "./hooks/useReminders";
 import Dashboard from "./pages/Dashboard";
-import History from "./pages/History";
 import MedicineSearch from "./pages/MedicineSearch";
 import Reminders from "./pages/Reminders";
+
+const ProfileTab = React.lazy(() => import("./components/ProfileTab"));
+const History = React.lazy(() => import("./pages/History"));
+
+const TabFallback = () => (
+  <div className="flex items-center justify-center h-32">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
+  </div>
+);
 
 type Tab = "dashboard" | "reminders" | "search" | "history" | "profile";
 
@@ -909,8 +917,16 @@ function AppInner() {
             {activeTab === "dashboard" && <Dashboard />}
             {activeTab === "reminders" && <Reminders />}
             {activeTab === "search" && <MedicineSearch />}
-            {activeTab === "history" && <History />}
-            {activeTab === "profile" && <ProfileTab onLogout={logout} />}
+            {activeTab === "history" && (
+              <Suspense fallback={<TabFallback />}>
+                <History />
+              </Suspense>
+            )}
+            {activeTab === "profile" && (
+              <Suspense fallback={<TabFallback />}>
+                <ProfileTab onLogout={logout} />
+              </Suspense>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -945,9 +961,95 @@ function AppInner() {
   );
 }
 
+function InstallBanner() {
+  const [deferredPrompt, setDeferredPrompt] = useState<
+    | (Event & {
+        prompt: () => Promise<void>;
+        userChoice: Promise<{ outcome: string }>;
+      })
+    | null
+  >(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Detect if already running in standalone mode
+  const isStandalone =
+    typeof window !== "undefined" &&
+    window.matchMedia("(display-mode: standalone)").matches;
+
+  const handleInstallPrompt = useCallback((e: Event) => {
+    e.preventDefault();
+    setDeferredPrompt(
+      e as Event & {
+        prompt: () => Promise<void>;
+        userChoice: Promise<{ outcome: string }>;
+      },
+    );
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+    return () =>
+      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+  }, [handleInstallPrompt]);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === "accepted") {
+      setDeferredPrompt(null);
+    }
+  };
+
+  if (isStandalone || !deferredPrompt || dismissed) return null;
+
+  return (
+    <div
+      data-ocid="pwa.install_banner"
+      className="fixed bottom-16 left-0 right-0 z-50 px-3 pb-safe"
+    >
+      <div className="max-w-lg mx-auto flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3 shadow-xl">
+        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+          <Pill className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white leading-tight">
+            Install MediRemind
+          </p>
+          <p className="text-xs text-slate-400 truncate">
+            Add to home screen for quick access
+          </p>
+        </div>
+        <button
+          type="button"
+          data-ocid="pwa.install_button"
+          onClick={handleInstall}
+          className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-teal-500 to-indigo-500 hover:opacity-90 transition-opacity"
+        >
+          Install
+        </button>
+        <button
+          type="button"
+          data-ocid="pwa.dismiss_button"
+          onClick={() => setDismissed(true)}
+          className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+          aria-label="Dismiss install banner"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   if (window.location.pathname === "/report") {
     return <ReportChapter4 />;
   }
-  return <AppInner />;
+  return (
+    <>
+      <AppInner />
+      <InstallBanner />
+    </>
+  );
 }

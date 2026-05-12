@@ -49,6 +49,7 @@ import {
   useProfile,
   useUpdateProfile,
 } from "../hooks/useProfile";
+import { usePushSubscription } from "../hooks/usePushSubscription";
 import { useReminders } from "../hooks/useReminders";
 
 // ─── Profile Card ────────────────────────────────────────────────────────────
@@ -94,10 +95,10 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
   };
 
   const handlePhotoUpload = (file: File) => {
-    if (file.size > 500 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
-        photo: "Photo must be under 500KB",
+        photo: "Photo must be under 5MB",
       }));
       return;
     }
@@ -291,7 +292,7 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
                   </p>
                 )}
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Optional · JPG, PNG up to 500 KB
+                  Optional · JPG, PNG up to 5 MB
                 </p>
               </div>
             </div>
@@ -400,6 +401,127 @@ function ProfileCard({ onLogout }: { onLogout: () => void }) {
               </Button>
             </div>
           </motion.div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Push Notifications Section ──────────────────────────────────────────────
+
+function PushNotificationsSection() {
+  const { isSupported, isEnabled, isLoading, error, enable, disable } =
+    usePushSubscription();
+
+  return (
+    <Card data-ocid="profile.push.card">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <svg
+              className="w-5 h-5 text-primary"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            Push Notifications
+          </CardTitle>
+          {isSupported && (
+            <Badge
+              data-ocid="profile.push.toggle"
+              variant={isEnabled ? "default" : "secondary"}
+              className={`text-xs ${
+                isEnabled
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                  : ""
+              }`}
+            >
+              {isEnabled ? "Active" : "Off"}
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Receive reminder alerts even when the app is closed.
+        </p>
+
+        {!isSupported ? (
+          <p className="text-sm text-muted-foreground italic">
+            Push notifications are not supported in this browser.
+          </p>
+        ) : isEnabled ? (
+          <Button
+            data-ocid="profile.push.button"
+            variant="outline"
+            size="sm"
+            className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10"
+            onClick={disable}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="1" y1="1" x2="23" y2="23" />
+                <path d="M17.73 17.73A10.16 10.16 0 0 1 12 20a2 2 0 0 1-2-2H6s-3-2-3-9a6 6 0 0 1 .34-2" />
+                <path d="M8.27 8.27A6 6 0 0 1 18 8c0 2.09-.7 4.04-1.73 5.73" />
+              </svg>
+            )}
+            {isLoading ? "Disabling..." : "Disable Push Notifications"}
+          </Button>
+        ) : (
+          <Button
+            data-ocid="profile.push.button"
+            size="sm"
+            className="gap-2 bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={enable}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            )}
+            {isLoading ? "Enabling..." : "Enable Push Notifications"}
+          </Button>
+        )}
+
+        {error && (
+          <p
+            data-ocid="profile.push.error_state"
+            className="text-xs text-destructive"
+          >
+            {error}
+          </p>
         )}
       </CardContent>
     </Card>
@@ -913,6 +1035,7 @@ export default function ProfileTab({ onLogout }: { onLogout: () => void }) {
       </div>
 
       <ProfileCard onLogout={onLogout} />
+      <PushNotificationsSection />
       <DoctorGuidanceSection />
       <CheckupReportsSection />
       <MedicationReportsSection />

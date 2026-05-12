@@ -42,9 +42,8 @@ export function useActor() {
         canisterId = cfg.canisterId;
       } catch (err) {
         console.error(
-          "[useActor] Cannot create actor — canister ID not resolved.",
-          "Set CANISTER_ID_BACKEND in your Vercel environment variables.",
-          "See VERCEL_SETUP.md for instructions.",
+          "[useActor] Actor not initialized — canister ID may be missing.",
+          "Set CANISTER_ID_BACKEND in Vercel environment variables or BACKEND_CANISTER_ID in the build environment.",
           err,
         );
         throw err;
@@ -92,6 +91,19 @@ export function useActor() {
     // have a real identity. This prevents the cold-start anonymous-actor bug
     // on Vercel where sessionStorage hasn't been read yet.
     enabled: !isRestoring && !!effectiveIdentity,
+    // Surface actor-is-null diagnostic when the query is disabled so callers
+    // get a clear console message instead of a silent failure.
+    ...(!isRestoring && !effectiveIdentity
+      ? {
+          onSettled: () => {
+            console.error(
+              "[useActor] Actor is null — all backend calls will fail.",
+              "No authenticated identity found after session restore completed.",
+              "Check canister ID configuration and ensure the user is logged in.",
+            );
+          },
+        }
+      : {}),
   });
 
   useEffect(() => {

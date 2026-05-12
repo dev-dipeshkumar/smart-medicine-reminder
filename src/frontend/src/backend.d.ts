@@ -18,20 +18,20 @@ export interface DoseLog {
     reminderId: string;
     timestamp: bigint;
 }
-export interface CheckupReport {
-    id: string;
-    visitDate: string;
-    notes: string;
-    doctorName: string;
+export interface http_header {
+    value: string;
+    name: string;
 }
 export interface http_request_result {
     status: bigint;
     body: Uint8Array;
     headers: Array<http_header>;
 }
-export interface http_header {
-    value: string;
-    name: string;
+export interface CheckupReport {
+    id: string;
+    visitDate: string;
+    notes: string;
+    doctorName: string;
 }
 export interface DoctorGuidance {
     id: string;
@@ -50,6 +50,13 @@ export interface DayStats {
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
+}
+export interface PushSubscriptionRecord {
+    endpoint: string;
+    auth: string;
+    createdAt: bigint;
+    p256dh: string;
+    userAgent: string;
 }
 export interface MedicineReminder {
     id: string;
@@ -118,14 +125,32 @@ export interface backendInterface {
     getMedicineInfo(searchQuery: string): Promise<string>;
     getPastNDayStats(nDays: bigint): Promise<Array<[bigint, DayStats]>>;
     getProfile(): Promise<UserProfile | null>;
+    getPushSubscription(): Promise<PushSubscriptionRecord | null>;
     getReminder(reminderId: string): Promise<MedicineReminder>;
     getReminderDayLogs(reminderId: string, dayStartNS: bigint): Promise<Array<DoseLog>>;
     getReminderDayLogsRange(reminderId: string, startTimeNS: bigint, endTimeNS: bigint): Promise<Array<DoseLog>>;
     getReminderDayStats(reminderId: string, dayStartNS: bigint): Promise<ReminderDayStats>;
     getReminderDayStatsRange(reminderId: string, startTimeNS: bigint, endTimeNS: bigint): Promise<ReminderDayStats>;
+    getVapidPublicKey(): Promise<string>;
+    hasPushSubscription(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     logDose(doseLog: DoseLog): Promise<void>;
+    registerPushSubscription(endpoint: string, p256dh: string, auth: string, userAgent: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setVapidPublicKey(key: string): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
+    unregisterPushSubscription(): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     updateCheckupReport(report: CheckupReport): Promise<void>;
     updateDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
     updateProfile(profile: UserProfile): Promise<void>;

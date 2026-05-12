@@ -27,20 +27,33 @@ const backendCanisterId =
 // Write env.json before the Vite build starts so loadConfig() can find it.
 // This covers both the Vercel build path and local `pnpm build` invocations
 // that don't go through the Caffeine canister.yaml pipeline.
+// GUARD: Only overwrite env.json when we actually have a real canister ID.
+// The Caffeine pipeline writes env.json via canister.yaml BEFORE pnpm build
+// runs, so if backendCanisterId is still "undefined" here we must NOT clobber
+// the good value that was already written.
 const envJsonPath = resolve(__dirname, "env.json");
-try {
-  const envPayload = {
-    backend_host: backendHost,
-    backend_canister_id: backendCanisterId,
-    project_id: process.env.PROJECT_ID ?? "undefined",
-    ii_derivation_origin: process.env.II_DERIVATION_ORIGIN ?? "undefined",
-    storage_gateway_url:
-      process.env.STORAGE_GATEWAY_URL ?? "https://blob.caffeine.ai",
-  };
-  writeFileSync(envJsonPath, JSON.stringify(envPayload, null, 2) + "\n");
-  console.log("[vite] env.json generated:", envPayload);
-} catch (err) {
-  console.warn("[vite] Could not write env.json (may be read-only in ICP pipeline — OK):", err.message);
+if (backendCanisterId !== "undefined") {
+  try {
+    const envPayload = {
+      backend_host: backendHost,
+      backend_canister_id: backendCanisterId,
+      project_id: process.env.PROJECT_ID ?? "undefined",
+      ii_derivation_origin: process.env.II_DERIVATION_ORIGIN ?? "undefined",
+      storage_gateway_url:
+        process.env.STORAGE_GATEWAY_URL ?? "https://blob.caffeine.ai",
+    };
+    writeFileSync(envJsonPath, JSON.stringify(envPayload, null, 2) + "\n");
+    console.log("[vite] env.json generated:", envPayload);
+  } catch (err) {
+    console.warn("[vite] Could not write env.json (may be read-only in ICP pipeline — OK):", err.message);
+  }
+} else {
+  console.warn(
+    "[vite] backendCanisterId is 'undefined' — skipping env.json overwrite so the\n" +
+    "       pre-written value from the Caffeine pipeline is preserved.\n" +
+    "       If deploying to Vercel, set CANISTER_ID_BACKEND or BACKEND_CANISTER_ID\n" +
+    "       in your Vercel project environment variables."
+  );
 }
 
 const ii_url =

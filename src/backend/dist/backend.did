@@ -45,6 +45,14 @@ type ReminderDayStats =
    takenDoses: nat;
    totalDoses: nat;
  };
+type PushSubscriptionRecord = 
+ record {
+   auth: text;
+   createdAt: int;
+   endpoint: text;
+   p256dh: text;
+   userAgent: text;
+ };
 type MedicineReminder = 
  record {
    color: text;
@@ -129,6 +137,7 @@ service : {
                                            DayStats;
                                          }) query;
   getProfile: () -> (opt UserProfile) query;
+  getPushSubscription: () -> (opt PushSubscriptionRecord) query;
   getReminder: (reminderId: text) -> (MedicineReminder) query;
   getReminderDayLogs: (reminderId: text, dayStartNS: int) ->
    (vec DoseLog) query;
@@ -138,9 +147,21 @@ service : {
    (ReminderDayStats) query;
   getReminderDayStatsRange: (reminderId: text, startTimeNS: int, endTimeNS:
    int) -> (ReminderDayStats) query;
+  getVapidPublicKey: () -> (text) query;
+  hasPushSubscription: () -> (bool) query;
   isCallerAdmin: () -> (bool) query;
   logDose: (doseLog: DoseLog) -> ();
+  registerPushSubscription: (endpoint: text, p256dh: text, auth: text,
+   userAgent: text) -> (variant {
+                          err: text;
+                          ok;
+                        });
+  setVapidPublicKey: (key: text) -> ();
   transform: (input: TransformationInput) -> (TransformationOutput) query;
+  unregisterPushSubscription: () -> (variant {
+                                       err: text;
+                                       ok;
+                                     });
   updateCheckupReport: (report: CheckupReport) -> ();
   updateDoctorGuidance: (guidance: DoctorGuidance) -> ();
   updateProfile: (profile: UserProfile) -> ();

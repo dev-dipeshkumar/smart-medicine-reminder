@@ -100,20 +100,20 @@ export interface DoseLog {
     reminderId: string;
     timestamp: bigint;
 }
-export interface CheckupReport {
-    id: string;
-    visitDate: string;
-    notes: string;
-    doctorName: string;
+export interface http_header {
+    value: string;
+    name: string;
 }
 export interface http_request_result {
     status: bigint;
     body: Uint8Array;
     headers: Array<http_header>;
 }
-export interface http_header {
-    value: string;
-    name: string;
+export interface CheckupReport {
+    id: string;
+    visitDate: string;
+    notes: string;
+    doctorName: string;
 }
 export interface DoctorGuidance {
     id: string;
@@ -132,6 +132,13 @@ export interface DayStats {
 export interface TransformationInput {
     context: Uint8Array;
     response: http_request_result;
+}
+export interface PushSubscriptionRecord {
+    endpoint: string;
+    auth: string;
+    createdAt: bigint;
+    p256dh: string;
+    userAgent: string;
 }
 export interface MedicineReminder {
     id: string;
@@ -201,20 +208,38 @@ export interface backendInterface {
     getMedicineInfo(searchQuery: string): Promise<string>;
     getPastNDayStats(nDays: bigint): Promise<Array<[bigint, DayStats]>>;
     getProfile(): Promise<UserProfile | null>;
+    getPushSubscription(): Promise<PushSubscriptionRecord | null>;
     getReminder(reminderId: string): Promise<MedicineReminder>;
     getReminderDayLogs(reminderId: string, dayStartNS: bigint): Promise<Array<DoseLog>>;
     getReminderDayLogsRange(reminderId: string, startTimeNS: bigint, endTimeNS: bigint): Promise<Array<DoseLog>>;
     getReminderDayStats(reminderId: string, dayStartNS: bigint): Promise<ReminderDayStats>;
     getReminderDayStatsRange(reminderId: string, startTimeNS: bigint, endTimeNS: bigint): Promise<ReminderDayStats>;
+    getVapidPublicKey(): Promise<string>;
+    hasPushSubscription(): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     logDose(doseLog: DoseLog): Promise<void>;
+    registerPushSubscription(endpoint: string, p256dh: string, auth: string, userAgent: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
+    setVapidPublicKey(key: string): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
+    unregisterPushSubscription(): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     updateCheckupReport(report: CheckupReport): Promise<void>;
     updateDoctorGuidance(guidance: DoctorGuidance): Promise<void>;
     updateProfile(profile: UserProfile): Promise<void>;
     updateReminder(reminder: MedicineReminder): Promise<void>;
 }
-import type { DoseLog as _DoseLog, DoseStatus as _DoseStatus, Frequency as _Frequency, MedicineReminder as _MedicineReminder, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { DoseLog as _DoseLog, DoseStatus as _DoseStatus, Frequency as _Frequency, MedicineReminder as _MedicineReminder, PushSubscriptionRecord as _PushSubscriptionRecord, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControl(): Promise<void> {
@@ -553,6 +578,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n20(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getPushSubscription(): Promise<PushSubscriptionRecord | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getPushSubscription();
+                return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getPushSubscription();
+            return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getReminder(arg0: string): Promise<MedicineReminder> {
         if (this.processError) {
             try {
@@ -623,6 +662,34 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getVapidPublicKey(): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getVapidPublicKey();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getVapidPublicKey();
+            return result;
+        }
+    }
+    async hasPushSubscription(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.hasPushSubscription();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.hasPushSubscription();
+            return result;
+        }
+    }
     async isCallerAdmin(): Promise<boolean> {
         if (this.processError) {
             try {
@@ -640,14 +707,48 @@ export class Backend implements backendInterface {
     async logDose(arg0: DoseLog): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.logDose(to_candid_DoseLog_n21(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.logDose(to_candid_DoseLog_n22(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.logDose(to_candid_DoseLog_n21(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.logDose(to_candid_DoseLog_n22(this._uploadFile, this._downloadFile, arg0));
+            return result;
+        }
+    }
+    async registerPushSubscription(arg0: string, arg1: string, arg2: string, arg3: string): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.registerPushSubscription(arg0, arg1, arg2, arg3);
+                return from_candid_variant_n26(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.registerPushSubscription(arg0, arg1, arg2, arg3);
+            return from_candid_variant_n26(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async setVapidPublicKey(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setVapidPublicKey(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setVapidPublicKey(arg0);
             return result;
         }
     }
@@ -663,6 +764,26 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.transform(arg0);
             return result;
+        }
+    }
+    async unregisterPushSubscription(): Promise<{
+        __kind__: "ok";
+        ok: null;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.unregisterPushSubscription();
+                return from_candid_variant_n26(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.unregisterPushSubscription();
+            return from_candid_variant_n26(this._uploadFile, this._downloadFile, result);
         }
     }
     async updateCheckupReport(arg0: CheckupReport): Promise<void> {
@@ -743,6 +864,9 @@ function from_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 function from_candid_opt_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
+function from_candid_opt_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_PushSubscriptionRecord]): PushSubscriptionRecord | null {
+    return value.length === 0 ? null : value[0];
+}
 function from_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     times: Array<string>;
@@ -820,17 +944,36 @@ function from_candid_variant_n19(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
+function from_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: null;
+} | {
+    err: string;
+}): {
+    __kind__: "ok";
+    ok: null;
+} | {
+    __kind__: "err";
+    err: string;
+} {
+    return "ok" in value ? {
+        __kind__: "ok",
+        ok: value.ok
+    } : "err" in value ? {
+        __kind__: "err",
+        err: value.err
+    } : value;
+}
 function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_MedicineReminder>): Array<MedicineReminder> {
     return value.map((x)=>from_candid_MedicineReminder_n14(_uploadFile, _downloadFile, x));
 }
 function from_candid_vec_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_DoseLog>): Array<DoseLog> {
     return value.map((x)=>from_candid_DoseLog_n8(_uploadFile, _downloadFile, x));
 }
-function to_candid_DoseLog_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseLog): _DoseLog {
-    return to_candid_record_n22(_uploadFile, _downloadFile, value);
+function to_candid_DoseLog_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseLog): _DoseLog {
+    return to_candid_record_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_DoseStatus_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): _DoseStatus {
-    return to_candid_variant_n24(_uploadFile, _downloadFile, value);
+function to_candid_DoseStatus_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): _DoseStatus {
+    return to_candid_variant_n25(_uploadFile, _downloadFile, value);
 }
 function to_candid_Frequency_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Frequency): _Frequency {
     return to_candid_variant_n6(_uploadFile, _downloadFile, value);
@@ -841,7 +984,7 @@ function to_candid_MedicineReminder_n3(_uploadFile: (file: ExternalBlob) => Prom
 function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     status: DoseStatus;
     snoozeMinutes?: bigint;
     reminderId: string;
@@ -853,7 +996,7 @@ function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     timestamp: bigint;
 } {
     return {
-        status: to_candid_DoseStatus_n23(_uploadFile, _downloadFile, value.status),
+        status: to_candid_DoseStatus_n24(_uploadFile, _downloadFile, value.status),
         snoozeMinutes: value.snoozeMinutes ? candid_some(value.snoozeMinutes) : candid_none(),
         reminderId: value.reminderId,
         timestamp: value.timestamp
@@ -904,7 +1047,7 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         guest: null
     } : value;
 }
-function to_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): {
+function to_candid_variant_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: DoseStatus): {
     taken: null;
 } | {
     missed: null;

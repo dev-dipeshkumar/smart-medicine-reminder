@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import type { MedicineReminder } from "../backend";
 
+/** Shape sent to the service worker for offline reminder caching. */
+interface CacheableReminder {
+  id: string;
+  medicineName: string;
+  dosage: string;
+  scheduledTime: string;
+  isActive: boolean;
+}
+
 export function useReminderNotifications(
   reminders: MedicineReminder[] | undefined,
 ) {
@@ -92,6 +101,34 @@ export function useReminderNotifications(
         }
       }
     };
+
+    // Sync reminders to service worker for offline notifications
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.serviceWorker?.controller &&
+      reminders &&
+      reminders.length > 0
+    ) {
+      const cacheableReminders: CacheableReminder[] = reminders
+        .filter((r) => r.isActive)
+        .flatMap((r) =>
+          (r.times.length ? r.times : ["08:00"]).map((t) => ({
+            id: `${r.id}_${t}`,
+            medicineName: r.name,
+            dosage: r.dosage,
+            scheduledTime: t,
+            isActive: r.isActive,
+          })),
+        );
+      try {
+        navigator.serviceWorker.controller.postMessage({
+          type: "CACHE_REMINDERS",
+          reminders: cacheableReminders,
+        });
+      } catch (e) {
+        console.warn("[MediRemind] Could not post reminders to SW:", e);
+      }
+    }
 
     // Check immediately, then every 30 seconds
     checkReminders();

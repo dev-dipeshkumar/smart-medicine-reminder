@@ -1,0 +1,40 @@
+{
+  "name": "MediRemind",
+  "short_name": "MediRemind",
+  "description": "Smart medicine reminder app — set reminders, track adherence, look up drug information.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/pwa-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Reminder",
+      "short_name": "Remind",
+      "description": "Add a new medicine reminder",
+      "url": "/?tab=reminders",
+      "icons": [{ "src": "/pwa-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -89,6 +89,29 @@ export async function getCanisterConfig(): Promise<CanisterConfig> {
     console.error("[config] Failed to fetch /env.json:", err);
   }
 
+  // Source 3: Caffeine platform globals injected at runtime
+  // The Caffeine ICP runtime may inject canister IDs into well-known window globals.
+  // Check all known global shapes before giving up.
+  try {
+    const caffeineGlobal =
+      (window as Window & { __CANISTER_IDS__?: Record<string, string> }).__CANISTER_IDS__?.backend ??
+      (window as Window & { __CAFFEINE_CANISTER_IDS__?: Record<string, string> }).__CAFFEINE_CANISTER_IDS__?.backend ??
+      (window as Window & { __DFX_CANISTER_IDS__?: Record<string, string> }).__DFX_CANISTER_IDS__?.backend;
+    if (caffeineGlobal && caffeineGlobal !== "undefined" && caffeineGlobal.trim() !== "") {
+      console.info("[config] canister ID resolved from Caffeine platform global:", caffeineGlobal);
+      _cachedConfig = {
+        canisterId: caffeineGlobal.trim(),
+        backendHost: MAINNET_HOST,
+        storageGatewayUrl: DEFAULT_STORAGE_URL,
+        projectId: DEFAULT_PROJECT_ID,
+        iiDerivationOrigin: undefined,
+      };
+      return _cachedConfig;
+    }
+  } catch {
+    // window globals may not be available in all environments — ignore
+  }
+
   throw new Error(
     "[MediRemind] Backend canister ID is not configured.\n" +
     "Set CANISTER_ID_BACKEND in your Vercel project settings.\n" +
